@@ -9,7 +9,7 @@
     "bip39": "^2.0.0",
     "bitcoin-tx-graph": "^1.0.1",
     "bitcoinjs-lib": "^1.0.2",
-    "cb-blockr": "^1.0.0"
+    "cb-blockr": "^1.1.0"
   },
   "devDependencies": {
     "mocha": "^1.21.4"

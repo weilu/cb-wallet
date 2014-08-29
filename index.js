@@ -2,7 +2,6 @@
 
 var API = require('cb-blockr')
 var discover = require('bip32-utils').discovery
-var bip39 = require('bip39')
 var bitcoin = require('bitcoinjs-lib')
 var async = require('async')
 var TxGraph = require('bitcoin-tx-graph')

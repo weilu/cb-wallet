@@ -7,7 +7,7 @@ var bitcoin = require('bitcoinjs-lib')
 var async = require('async')
 var TxGraph = require('bitcoin-tx-graph')
 
-function Wallet(externalAccount, internalAccount, networkName, txGraph, done) {
+function Wallet(externalAccount, internalAccount, networkName, done) {
   try {
     this.externalAccount = bitcoin.HDNode.fromBase58(externalAccount)
     this.internalAccount = bitcoin.HDNode.fromBase58(internalAccount)
@@ -16,50 +16,48 @@ function Wallet(externalAccount, internalAccount, networkName, txGraph, done) {
   }
 
   this.api = new API(networkName)
+  this.txGraph = new TxGraph()
 
-  if(typeof txGraph === 'function') {
-    done = txGraph
-    this.txGraph = new TxGraph()
+  var that = this
 
-    var that = this
-    initializeGraph(this.txGraph, [this.externalAccount, this.internalAccount], this.api, networkName, function(err) {
-      if(err) return done(err);
-      done(null, that)
-    })
-  } else {
-    this.txGraph = txGraph
-    done(null, this)
-  }
-}
-
-function initializeGraph(txGraph, accounts, api, networkName, done) {
-  var functions = accounts.map(function(account) {
-    return discoverFn(account, api)
+  var functions = [this.externalAccount, this.internalAccount].map(function(account) {
+    return discoverFn(account, that.api)
   })
 
   async.parallel(functions, function(err, results) {
     if(err) return done(err);
 
-    var addresses = results[0].addresses.concat(results[1].addresses)
+    that.balance = results[0].balance + results[1].balance
 
-    // var balance = results[0].balance + results[1].balance
-    // console.log(addresses, balance)
+    var receiveAddresses = results[0].addresses
+    that.addressIndex = receiveAddresses.length
 
-    api.addresses.transactions(addresses, null, function(err, transactions) {
+    var changeAddresses = results[1].addresses
+    that.changeAddressIndex = changeAddresses.length
+
+    initializeGraph(that.txGraph, receiveAddresses.concat(changeAddresses), that.api, networkName, function(err) {
       if(err) return done(err);
+      done(null, that)
+    })
+  })
 
+}
+
+function initializeGraph(txGraph, addresses, api, networkName, done) {
+  api.addresses.transactions(addresses, null, function(err, transactions) {
+    if(err) return done(err);
+
+    addTransactionsToGraph(transactions, txGraph)
+
+    var fundingTxIds = txGraph.getTails().map(function(node) {
+      return node.id
+    })
+    api.transactions.get(fundingTxIds, function(err, transactions) {
+      if(err) return done(err);
       addTransactionsToGraph(transactions, txGraph)
 
-      var fundingTxIds = txGraph.getTails().map(function(node) {
-        return node.id
-      })
-      api.transactions.get(fundingTxIds, function(err, transactions) {
-        if(err) return done(err);
-        addTransactionsToGraph(transactions, txGraph)
-
-        txGraph.calculateFeesAndValues(addresses, bitcoin.networks[networkName])
-        done()
-      })
+      txGraph.calculateFeesAndValues(addresses, bitcoin.networks[networkName])
+      done()
     })
   })
 }

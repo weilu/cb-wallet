@@ -4,30 +4,24 @@ var fixtures = require('./fixtures')
 var TxGraph = require('bitcoin-tx-graph')
 
 describe('Common Blockchain Wallet', function() {
-  this.timeout(30000)
+  this.timeout(40000)
   var wallet
 
   describe('constructor', function() {
     it('returns error when externalAccount and internalAccount are missing', function(done) {
-      new Wallet(null, null, 'testnet', new TxGraph(), function(err) {
+      new Wallet(null, null, 'testnet', function(err) {
         assert(err)
         done()
       })
     })
 
-    it('does not create a new txGraph when one is passed in', function(done) {
-      var graph = new TxGraph()
-      new Wallet(fixtures.externalAccount, fixtures.internalAccount, 'testnet', graph, function(err, wallet) {
-        assert.ifError(err)
-        assert.equal(wallet.txGraph, graph)
-        done()
-      })
-    })
-
-    it('initializes a txGraph when it is not passed in', function(done) {
+    it('initializes a txGraph, assigns balance, addressIndex and changeAddressIndex', function(done) {
       wallet = new Wallet(fixtures.externalAccount, fixtures.internalAccount, 'testnet', function(err, wallet) {
         assert.ifError(err)
         assert(wallet.txGraph)
+        assert.equal(wallet.balance, 0)
+        assert.equal(wallet.addressIndex, 5)
+        assert.equal(wallet.changeAddressIndex, 18)
         done()
       })
     })

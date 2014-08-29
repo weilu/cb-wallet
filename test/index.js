@@ -22,6 +22,8 @@ describe('Common Blockchain Wallet', function() {
 
       it('initializes a txGraph', function() {
         assert(wallet.txGraph)
+        assert.equal(wallet.txGraph.heads.length, 1)
+        assert.equal(wallet.txGraph.heads[0].id, fixtures.cashingTxId)
       })
 
       it('assigns balance', function() {

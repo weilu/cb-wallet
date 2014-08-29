@@ -1,4 +1,5 @@
 {
   "externalAccount": "tprv8f44qFVRyvvEfdUm53nAFHuDfUPsyPgX3FuTs8i9AonYwPe4eSa7FcSAaXhBbdyDB1NEJri43jFiJVuKdA3ePZCkQfmY4tcdD23sa6SmyPm",
-  "internalAccount": "tprv8f44qFVRyvvEge1Fvm8LZZPEw8L2aykvT7e98SEwqZCBfkeWfRCPENkbvT7wUARC5k1xf6RvpiQ8K9nD2xVvYyktvCnwwQCm25a2kCSsAkF"
+  "internalAccount": "tprv8f44qFVRyvvEge1Fvm8LZZPEw8L2aykvT7e98SEwqZCBfkeWfRCPENkbvT7wUARC5k1xf6RvpiQ8K9nD2xVvYyktvCnwwQCm25a2kCSsAkF",
+  "cashingTxId": "8ac1c666e4308b416261b512703996d693cece2b0be1b82db75cf6299de28949"
 }

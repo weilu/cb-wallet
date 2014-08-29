@@ -15,14 +15,22 @@ describe('Common Blockchain Wallet', function() {
       })
     })
 
-    it('initializes a txGraph, assigns balance, addressIndex and changeAddressIndex', function(done) {
-      wallet = new Wallet(fixtures.externalAccount, fixtures.internalAccount, 'testnet', function(err, wallet) {
-        assert.ifError(err)
+    describe('wallet properties', function() {
+      before(function(done) {
+        wallet = new Wallet(fixtures.externalAccount, fixtures.internalAccount, 'testnet', done)
+      })
+
+      it('initializes a txGraph', function() {
         assert(wallet.txGraph)
+      })
+
+      it('assigns balance', function() {
         assert.equal(wallet.balance, 0)
+      })
+
+      it('assigns addressIndex and changeAddressIndex', function() {
         assert.equal(wallet.addressIndex, 5)
         assert.equal(wallet.changeAddressIndex, 18)
-        done()
       })
     })
   })

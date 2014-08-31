@@ -46,14 +46,14 @@ function initializeGraph(txGraph, addresses, api, networkName, done) {
   api.addresses.transactions(addresses, null, function(err, transactions) {
     if(err) return done(err);
 
-    addTransactionsToGraph(transactions, txGraph)
+    var txs = parseTransactions(transactions)
 
-    var fundingTxIds = txGraph.getTails().map(function(node) {
-      return node.id
-    })
-    api.transactions.get(fundingTxIds, function(err, transactions) {
+    addTransactionsToGraph(txs, txGraph)
+
+    api.transactions.get(getAdditionalTxIds(txs), function(err, transactions) {
       if(err) return done(err);
-      addTransactionsToGraph(transactions, txGraph)
+
+      addTransactionsToGraph(parseTransactions(transactions), txGraph)
 
       txGraph.calculateFeesAndValues(addresses, bitcoin.networks[networkName])
       done()
@@ -61,17 +61,37 @@ function initializeGraph(txGraph, addresses, api, networkName, done) {
   })
 }
 
+function getAdditionalTxIds(txs) {
+  var inputTxIds = txs.reduce(function(memo, tx) {
+    tx.ins.forEach(function(input) {
+      var hash = new Buffer(input.hash)
+      Array.prototype.reverse.call(hash)
+      memo[hash.toString('hex')] = true
+    })
+    return memo
+  }, {})
+
+  var txIds = txs.map(function(tx) { return tx.getId() })
+
+  return Object.keys(inputTxIds).filter(function(id) {
+    return txIds.indexOf(id) < 0
+  })
+}
+
 function discoverFn(account, api) {
   return function(callback) { discoverUsedAddresses(account, api, callback) }
 }
 
-function addTransactionsToGraph(transactions, graph) {
-  transactions.forEach(function(t) {
+function parseTransactions(transactions) {
+  return transactions.map(function(t) {
     var tx = bitcoin.Transaction.fromHex(t.hex)
     tx.confirmations = t.confirmations
-
-    graph.addTx(tx)
+    return tx
   })
+}
+
+function addTransactionsToGraph(transactions, graph) {
+  transactions.forEach(function(tx) { graph.addTx(tx) })
 }
 
 function discoverUsedAddresses(account, api, done) {

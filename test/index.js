@@ -2,10 +2,15 @@ var assert = require('assert')
 var Wallet = require('../')
 var fixtures = require('./fixtures')
 var TxGraph = require('bitcoin-tx-graph')
+var uniqueify = require('uniqueify')
 
 describe('Common Blockchain Wallet', function() {
   this.timeout(40000)
   var wallet
+
+  before(function(done) {
+    wallet = new Wallet(fixtures.externalAccount, fixtures.internalAccount, 'testnet', done)
+  })
 
   describe('constructor', function() {
     it('returns error when externalAccount and internalAccount are missing', function(done) {
@@ -16,10 +21,6 @@ describe('Common Blockchain Wallet', function() {
     })
 
     describe('wallet properties', function() {
-      before(function(done) {
-        wallet = new Wallet(fixtures.externalAccount, fixtures.internalAccount, 'testnet', done)
-      })
-
       it('initializes a txGraph', function() {
         assert(wallet.txGraph)
         assert.equal(wallet.txGraph.heads.length, 1)
@@ -34,6 +35,20 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(wallet.addressIndex, 5)
         assert.equal(wallet.changeAddressIndex, 18)
       })
+    })
+  })
+
+  describe('getTransactionHistory', function() {
+    it('returns the expected transactions', function() {
+      var txIds = wallet.getTransactionHistory().map(function(tx) {
+        return tx.getId()
+      })
+
+      var expectedIds = fixtures.txs.map(function(tx) {
+        return tx.id
+      })
+
+      assert.deepEqual(txIds.sort(), expectedIds.sort())
     })
   })
 })

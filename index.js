@@ -39,8 +39,27 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
       done(null, that)
     })
   })
-
 }
+
+Wallet.prototype.getTransactionHistory = function() {
+  var txGraph = this.txGraph
+
+  var nodes = txGraph.getAllNodes().filter(function(n) {
+    return n.tx != null && n.tx.value != null
+  }).sort(function(a, b) {
+    var confDiff = a.tx.confirmations - b.tx.confirmations
+    if(confDiff !== 0) {
+      return confDiff
+    }
+
+    return txGraph.compareNodes(a, b)
+  })
+
+  return nodes.map(function(n) {
+    return n.tx
+  })
+}
+
 
 function initializeGraph(txGraph, addresses, api, networkName, done) {
   api.addresses.transactions(addresses, null, function(err, transactions) {
@@ -56,6 +75,7 @@ function initializeGraph(txGraph, addresses, api, networkName, done) {
       addTransactionsToGraph(parseTransactions(transactions), txGraph)
 
       txGraph.calculateFeesAndValues(addresses, bitcoin.networks[networkName])
+
       done()
     })
   })

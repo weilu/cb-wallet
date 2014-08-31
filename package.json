@@ -12,7 +12,8 @@
     "cb-blockr": "^1.1.0"
   },
   "devDependencies": {
-    "mocha": "^1.21.4"
+    "mocha": "^1.21.4",
+    "uniqueify": "^1.0.0"
   },
   "scripts": {
     "test": "mocha test"

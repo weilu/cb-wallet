@@ -7,6 +7,10 @@ var async = require('async')
 var TxGraph = require('bitcoin-tx-graph')
 
 function Wallet(externalAccount, internalAccount, networkName, done) {
+  if(arguments.length === 0) {
+    return this
+  }
+
   try {
     this.externalAccount = bitcoin.HDNode.fromBase58(externalAccount)
     this.internalAccount = bitcoin.HDNode.fromBase58(internalAccount)
@@ -61,6 +65,54 @@ Wallet.prototype.getTransactionHistory = function() {
   })
 }
 
+Wallet.prototype.serialize = function() {
+  var txs = this.txGraph.getAllNodes().reduce(function(memo, node) {
+    var tx = node.tx
+    if(tx == null) return memo;
+
+    memo.push({
+      hex: tx.toHex(),
+      value: tx.value,
+      fee: tx.fee,
+      confirmations: tx.confirmations
+    })
+
+    return memo
+  }, [])
+
+  return JSON.stringify({
+    externalAccount: this.externalAccount.toBase58(),
+    internalAccount: this.internalAccount.toBase58(),
+    addressIndex: this.addressIndex,
+    changeAddressIndex: this.changeAddressIndex,
+    balance: this.balance,
+    networkName: this.networkName,
+    txs: txs
+  })
+}
+
+Wallet.deserialize = function(json) {
+  var wallet = new Wallet()
+  var deserialized = JSON.parse(json)
+  wallet.externalAccount = bitcoin.HDNode.fromBase58(deserialized.externalAccount)
+  wallet.internalAccount = bitcoin.HDNode.fromBase58(deserialized.internalAccount)
+  wallet.addressIndex = deserialized.addressIndex
+  wallet.changeAddressIndex = deserialized.changeAddressIndex
+  wallet.balance = deserialized.balance
+  wallet.networkName = deserialized.networkName
+  wallet.txGraph = new TxGraph()
+  var txs = deserialized.txs.map(function(obj) {
+    var tx = bitcoin.Transaction.fromHex(obj.hex)
+    tx.value = obj.value
+    tx.fee = obj.fee
+    tx.confirmations = obj.confirmations
+    return tx
+  })
+
+  addTransactionsToGraph(txs, wallet.txGraph)
+
+  return wallet
+}
 
 function initializeGraph(txGraph, addresses, api, networkName, done) {
   api.addresses.transactions(addresses, null, function(err, transactions) {

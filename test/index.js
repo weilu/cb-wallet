@@ -47,6 +47,21 @@ describe('Common Blockchain Wallet', function() {
     })
   })
 
+  describe('serialization & deserialization', function() {
+    it('works', function() {
+      var parsed = Wallet.deserialize(wallet.serialize())
+
+      assert.equal(parsed.txGraph.heads.length, wallet.txGraph.heads.length)
+      assert.equal(parsed.txGraph.heads[0].id, wallet.txGraph.heads[0].id)
+      assert.equal(parsed.balance, wallet.balance)
+      assert.equal(parsed.externalAccount.toBase58(), wallet.externalAccount.toBase58())
+      assert.equal(parsed.internalAccount.toBase58(), wallet.internalAccount.toBase58())
+      assert.equal(parsed.addressIndex, wallet.addressIndex)
+      assert.equal(parsed.changeAddressIndex, wallet.changeAddressIndex)
+      assert.equal(parsed.networkName, wallet.networkName)
+    })
+  })
+
   describe('getTransactionHistory', function() {
     it('returns the expected transactions', function() {
       var txIds = wallet.getTransactionHistory().map(function(tx) {

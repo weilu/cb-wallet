@@ -35,6 +35,10 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(wallet.addressIndex, 5)
         assert.equal(wallet.changeAddressIndex, 18)
       })
+
+      it('assigns networkName', function() {
+        assert.equal(wallet.networkName, 'testnet')
+      })
     })
   })
 

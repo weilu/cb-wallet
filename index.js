@@ -14,6 +14,7 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
     return done(e)
   }
 
+  this.networkName = networkName
   this.api = new API(networkName)
   this.txGraph = new TxGraph()
 

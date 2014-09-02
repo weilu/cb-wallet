@@ -39,8 +39,10 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
     var changeAddresses = results[1].addresses
     that.changeAddressIndex = changeAddresses.length
 
-    initializeGraph(that.txGraph, receiveAddresses.concat(changeAddresses), that.api, networkName, function(err) {
+    fetchTransactions(that.api, receiveAddresses.concat(changeAddresses), function(err, txs, metadata) {
       if(err) return done(err);
+
+      addTransactionsToGraph(txs, that.txGraph)
       done(null, that)
     })
   })
@@ -120,25 +122,34 @@ Wallet.deserialize = function(json) {
   return wallet
 }
 
-function initializeGraph(txGraph, addresses, api, networkName, done) {
+function fetchTransactions(api, addresses, done) {
   api.addresses.transactions(addresses, null, function(err, transactions) {
     if(err) return done(err);
 
-    var txs = parseTransactions(transactions)
+    var txsAndMetadata = parseTransactions(transactions)
 
-    addTransactionsToGraph(txs, txGraph)
-
-    api.transactions.get(getAdditionalTxIds(txs), function(err, transactions) {
+    api.transactions.get(getAdditionalTxIds(txsAndMetadata.txs), function(err, transactions) {
       if(err) return done(err);
 
-      addTransactionsToGraph(parseTransactions(transactions), txGraph)
+      var additionalTxsAndMeta = parseTransactions(transactions)
 
-      txGraph.calculateFeesAndValues(addresses, bitcoin.networks[networkName])
+      var txs = txsAndMetadata.txs.concat(additionalTxsAndMeta.txs)
+      var metadata = txsAndMetadata.metadata.concat(additionalTxsAndMeta.metadata)
 
-      done()
+      if(txs.length !== metadata.length) {
+        return done(new Error("expect metadata fetched for every transaction"))
+      }
+
+      var meta = txs.reduce(function(memo, tx, i) {
+        memo[tx.getId()] = metadata[i]
+        return memo
+      }, {})
+
+      done(null, txs, meta)
     })
   })
 }
+
 
 function getAdditionalTxIds(txs) {
   var inputTxIds = txs.reduce(function(memo, tx) {
@@ -162,11 +173,12 @@ function discoverFn(account, api) {
 }
 
 function parseTransactions(transactions) {
-  return transactions.map(function(t) {
-    var tx = bitcoin.Transaction.fromHex(t.hex)
-    tx.confirmations = t.confirmations
-    return tx
-  })
+  return transactions.reduce(function(memo, t) {
+    memo.txs.push(bitcoin.Transaction.fromHex(t.hex))
+    memo.metadata.push(t.confirmations)
+
+    return memo
+  }, {txs: [], metadata: []})
 }
 
 function addTransactionsToGraph(transactions, graph) {

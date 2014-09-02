@@ -60,6 +60,12 @@ Wallet.prototype.getTransactionHistory = function() {
     return txGraph.compareNodes(a, b)
   })
 
+  nodes.forEach(function(n) {
+    if(n.tx.value < 0) {
+      n.tx.value += n.tx.fee
+    }
+  })
+
   return nodes.map(function(n) {
     return n.tx
   })

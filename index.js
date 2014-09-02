@@ -43,9 +43,26 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
       if(err) return done(err);
 
       addTransactionsToGraph(txs, that.txGraph)
+
       done(null, that)
     })
   })
+}
+
+Wallet.prototype.getUsedAddresses = function() {
+  return deriveAddresses(this.externalAccount, this.addressIndex)
+}
+
+Wallet.prototype.getUsedChangeAddresses = function() {
+  return deriveAddresses(this.internalAccount, this.changeAddressIndex)
+}
+
+function deriveAddresses(account, untilId) {
+  var addresses = []
+  for(var i=0; i<untilId; i++) {
+    addresses.push(account.derive(i).getAddress().toString())
+  }
+  return addresses
 }
 
 Wallet.prototype.getTransactionHistory = function() {

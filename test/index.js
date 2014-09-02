@@ -2,6 +2,8 @@ var assert = require('assert')
 var TxGraph = require('bitcoin-tx-graph')
 var fixtures = require('./wallet')
 var history = require('./history')
+var addresses = require('./addresses').addresses
+var changeAddresses = require('./addresses').changeAddresses
 var Wallet = require('../')
 
 describe('Common Blockchain Wallet', function() {
@@ -44,6 +46,18 @@ describe('Common Blockchain Wallet', function() {
         it('assigns networkName', function() {
           assert.equal(wallet.networkName, 'testnet')
         })
+      })
+    })
+
+    describe('getUsedAddresses', function() {
+      it('returns a list of used receive addresses in order', function() {
+        assert.deepEqual(wallet.getUsedAddresses(), addresses)
+      })
+    })
+
+    describe('getUsedChangeAddresses', function() {
+      it('returns a list of used change addresses in order', function() {
+        assert.deepEqual(wallet.getUsedChangeAddresses(), changeAddresses)
       })
     })
 

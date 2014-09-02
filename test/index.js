@@ -31,6 +31,11 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(wallet.balance, 0)
       })
 
+      it('assigns externalAccount and internalAccount ', function() {
+        assert.equal(wallet.externalAccount.toBase58(), fixtures.externalAccount)
+        assert.equal(wallet.internalAccount.toBase58(), fixtures.internalAccount)
+      })
+
       it('assigns addressIndex and changeAddressIndex', function() {
         assert.equal(wallet.addressIndex, 5)
         assert.equal(wallet.changeAddressIndex, 18)

@@ -46,6 +46,17 @@ describe('Common Blockchain Wallet', function() {
         it('assigns networkName', function() {
           assert.equal(wallet.networkName, 'testnet')
         })
+
+        it('assigns txMetadata', function() {
+          var txIds = wallet.txGraph.getAllNodes().filter(function(n) {
+            return n.tx != null
+          }).map(function(n) { return n.id })
+          assert.deepEqual(Object.keys(wallet.txMetadata).sort(), txIds.sort())
+
+          for(var key in wallet.txMetadata) {
+            assert.equal(typeof wallet.txMetadata[key].confirmations, 'number')
+          }
+        })
       })
     })
 
@@ -73,6 +84,7 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(parsed.addressIndex, wallet.addressIndex)
         assert.equal(parsed.changeAddressIndex, wallet.changeAddressIndex)
         assert.equal(parsed.networkName, wallet.networkName)
+        assert.deepEqual(parsed.txMetadata, wallet.txMetadata)
       })
     })
   })

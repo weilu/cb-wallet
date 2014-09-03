@@ -44,6 +44,9 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
 
       addTransactionsToGraph(txs, that.txGraph)
 
+      that.txMetadata = metadata
+      that.txGraph.calculateFeesAndValues(addresses, bitcoin.networks[that.networkName])
+
       done(null, that)
     })
   })
@@ -68,10 +71,11 @@ function deriveAddresses(account, untilId) {
 Wallet.prototype.getTransactionHistory = function() {
   var txGraph = this.txGraph
 
+  var metadata = this.txMetadata
   var nodes = txGraph.getAllNodes().filter(function(n) {
     return n.tx != null && n.tx.value != null
   }).sort(function(a, b) {
-    var confDiff = a.tx.confirmations - b.tx.confirmations
+    var confDiff = metadata[a.id].confirmations - metadata[b.id].confirmations
     if(confDiff !== 0) {
       return confDiff
     }
@@ -95,13 +99,7 @@ Wallet.prototype.serialize = function() {
     var tx = node.tx
     if(tx == null) return memo;
 
-    memo.push({
-      hex: tx.toHex(),
-      value: tx.value,
-      fee: tx.fee,
-      confirmations: tx.confirmations
-    })
-
+    memo.push(tx.toHex())
     return memo
   }, [])
 
@@ -112,7 +110,8 @@ Wallet.prototype.serialize = function() {
     changeAddressIndex: this.changeAddressIndex,
     balance: this.balance,
     networkName: this.networkName,
-    txs: txs
+    txs: txs,
+    txMetadata: this.txMetadata
   })
 }
 
@@ -125,13 +124,11 @@ Wallet.deserialize = function(json) {
   wallet.changeAddressIndex = deserialized.changeAddressIndex
   wallet.balance = deserialized.balance
   wallet.networkName = deserialized.networkName
+  wallet.txMetadata = deserialized.txMetadata
+
   wallet.txGraph = new TxGraph()
-  var txs = deserialized.txs.map(function(obj) {
-    var tx = bitcoin.Transaction.fromHex(obj.hex)
-    tx.value = obj.value
-    tx.fee = obj.fee
-    tx.confirmations = obj.confirmations
-    return tx
+  var txs = deserialized.txs.map(function(hex) {
+    return bitcoin.Transaction.fromHex(hex)
   })
 
   addTransactionsToGraph(txs, wallet.txGraph)
@@ -143,26 +140,26 @@ function fetchTransactions(api, addresses, done) {
   api.addresses.transactions(addresses, null, function(err, transactions) {
     if(err) return done(err);
 
-    var txsAndMetadata = parseTransactions(transactions)
+    var txsAndConfs = parseTransactions(transactions)
 
-    api.transactions.get(getAdditionalTxIds(txsAndMetadata.txs), function(err, transactions) {
+    api.transactions.get(getAdditionalTxIds(txsAndConfs.txs), function(err, transactions) {
       if(err) return done(err);
 
       var additionalTxsAndMeta = parseTransactions(transactions)
 
-      var txs = txsAndMetadata.txs.concat(additionalTxsAndMeta.txs)
-      var metadata = txsAndMetadata.metadata.concat(additionalTxsAndMeta.metadata)
+      var txs = txsAndConfs.txs.concat(additionalTxsAndMeta.txs)
+      var confirmations = txsAndConfs.confirmations.concat(additionalTxsAndMeta.confirmations)
 
-      if(txs.length !== metadata.length) {
-        return done(new Error("expect metadata fetched for every transaction"))
+      if(txs.length !== confirmations.length) {
+        return done(new Error("expect confirmations fetched for every transaction"))
       }
 
-      var meta = txs.reduce(function(memo, tx, i) {
-        memo[tx.getId()] = metadata[i]
+      var metadata = txs.reduce(function(memo, tx, i) {
+        memo[tx.getId()] = { confirmations: confirmations[i] }
         return memo
       }, {})
 
-      done(null, txs, meta)
+      done(null, txs, metadata)
     })
   })
 }
@@ -192,10 +189,10 @@ function discoverFn(account, api) {
 function parseTransactions(transactions) {
   return transactions.reduce(function(memo, t) {
     memo.txs.push(bitcoin.Transaction.fromHex(t.hex))
-    memo.metadata.push(t.confirmations)
+    memo.confirmations.push(t.confirmations)
 
     return memo
-  }, {txs: [], metadata: []})
+  }, {txs: [], confirmations: []})
 }
 
 function addTransactionsToGraph(transactions, graph) {

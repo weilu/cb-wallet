@@ -3,12 +3,11 @@
 var API = require('cb-blockr')
 var bitcoin = require('bitcoinjs-lib')
 var TxGraph = require('bitcoin-tx-graph')
-var discoverAddresses = require('./discover')
+var discoverAddresses = require('./network').discoverAddresses
+var fetchTransactions = require('./network').fetchTransactions
 
 function Wallet(externalAccount, internalAccount, networkName, done) {
-  if(arguments.length === 0) {
-    return this
-  }
+  if(arguments.length === 0) return this;
 
   try {
     this.externalAccount = bitcoin.HDNode.fromBase58(externalAccount)
@@ -23,7 +22,7 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
 
   var that = this
 
-  discoverAddresses(this.externalAccount, this.internalAccount, this.api, function(err, results) {
+  discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, results) {
     if(err) return done(err);
 
     that.balance = results.balance
@@ -112,59 +111,6 @@ Wallet.deserialize = function(json) {
   return wallet
 }
 
-function fetchTransactions(api, addresses, done) {
-  api.addresses.transactions(addresses, null, function(err, transactions) {
-    if(err) return done(err);
-
-    var txsAndConfs = parseTransactions(transactions)
-
-    api.transactions.get(getAdditionalTxIds(txsAndConfs.txs), function(err, transactions) {
-      if(err) return done(err);
-
-      var additionalTxsAndConfs = parseTransactions(transactions)
-
-      var txs = txsAndConfs.txs.concat(additionalTxsAndConfs.txs)
-      var confirmations = txsAndConfs.confirmations.concat(additionalTxsAndConfs.confirmations)
-
-      if(txs.length !== confirmations.length) {
-        return done(new Error("expect confirmations fetched for every transaction"))
-      }
-
-      var metadata = txs.reduce(function(memo, tx, i) {
-        memo[tx.getId()] = { confirmations: confirmations[i] }
-        return memo
-      }, {})
-
-      done(null, txs, metadata)
-    })
-  })
-}
-
-function parseTransactions(transactions) {
-  return transactions.reduce(function(memo, t) {
-    memo.txs.push(bitcoin.Transaction.fromHex(t.hex))
-    memo.confirmations.push(t.confirmations)
-
-    return memo
-  }, {txs: [], confirmations: []})
-}
-
-function getAdditionalTxIds(txs) {
-  var inputTxIds = txs.reduce(function(memo, tx) {
-    tx.ins.forEach(function(input) {
-      var hash = new Buffer(input.hash)
-      Array.prototype.reverse.call(hash)
-      memo[hash.toString('hex')] = true
-    })
-    return memo
-  }, {})
-
-  var txIds = txs.map(function(tx) { return tx.getId() })
-
-  return Object.keys(inputTxIds).filter(function(id) {
-    return txIds.indexOf(id) < 0
-  })
-}
 
 function mergeMetadata(feesAndValues, metadata) {
   for(var id in metadata) {

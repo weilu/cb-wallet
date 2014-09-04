@@ -34,7 +34,7 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
     fetchTransactions(that.api, addresses, function(err, txs, metadata) {
       if(err) return done(err);
 
-      addTransactionsToGraph(txs, that.txGraph)
+      txs.forEach(function(tx) { that.txGraph.addTx(tx) })
 
       var feesAndValues = that.txGraph.calculateFeesAndValues(addresses, bitcoin.networks[that.networkName])
       that.txMetadata = mergeMetadata(feesAndValues, metadata)
@@ -105,11 +105,9 @@ Wallet.deserialize = function(json) {
   wallet.txMetadata = deserialized.txMetadata
 
   wallet.txGraph = new TxGraph()
-  var txs = deserialized.txs.map(function(hex) {
-    return bitcoin.Transaction.fromHex(hex)
+  deserialized.txs.forEach(function(hex) {
+    wallet.txGraph.addTx(bitcoin.Transaction.fromHex(hex))
   })
-
-  addTransactionsToGraph(txs, wallet.txGraph)
 
   return wallet
 }
@@ -123,10 +121,10 @@ function fetchTransactions(api, addresses, done) {
     api.transactions.get(getAdditionalTxIds(txsAndConfs.txs), function(err, transactions) {
       if(err) return done(err);
 
-      var additionalTxsAndMeta = parseTransactions(transactions)
+      var additionalTxsAndConfs = parseTransactions(transactions)
 
-      var txs = txsAndConfs.txs.concat(additionalTxsAndMeta.txs)
-      var confirmations = txsAndConfs.confirmations.concat(additionalTxsAndMeta.confirmations)
+      var txs = txsAndConfs.txs.concat(additionalTxsAndConfs.txs)
+      var confirmations = txsAndConfs.confirmations.concat(additionalTxsAndConfs.confirmations)
 
       if(txs.length !== confirmations.length) {
         return done(new Error("expect confirmations fetched for every transaction"))
@@ -142,6 +140,14 @@ function fetchTransactions(api, addresses, done) {
   })
 }
 
+function parseTransactions(transactions) {
+  return transactions.reduce(function(memo, t) {
+    memo.txs.push(bitcoin.Transaction.fromHex(t.hex))
+    memo.confirmations.push(t.confirmations)
+
+    return memo
+  }, {txs: [], confirmations: []})
+}
 
 function getAdditionalTxIds(txs) {
   var inputTxIds = txs.reduce(function(memo, tx) {
@@ -158,20 +164,6 @@ function getAdditionalTxIds(txs) {
   return Object.keys(inputTxIds).filter(function(id) {
     return txIds.indexOf(id) < 0
   })
-}
-
-
-function parseTransactions(transactions) {
-  return transactions.reduce(function(memo, t) {
-    memo.txs.push(bitcoin.Transaction.fromHex(t.hex))
-    memo.confirmations.push(t.confirmations)
-
-    return memo
-  }, {txs: [], confirmations: []})
-}
-
-function addTransactionsToGraph(transactions, graph) {
-  transactions.forEach(function(tx) { graph.addTx(tx) })
 }
 
 function mergeMetadata(feesAndValues, metadata) {

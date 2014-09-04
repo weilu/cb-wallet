@@ -46,15 +46,7 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
       addTransactionsToGraph(txs, that.txGraph)
 
       var feesAndValues = that.txGraph.calculateFeesAndValues(addresses, bitcoin.networks[that.networkName])
-      for(var id in metadata) {
-        var fee = feesAndValues[id].fee
-        if(fee != null) metadata[id].fee = fee
-
-        var value = feesAndValues[id].value
-        if(value < 0) value += fee
-        if(value != null) metadata[id].value = value
-      }
-      that.txMetadata = metadata
+      that.txMetadata = mergeMetadata(feesAndValues, metadata)
 
       done(null, that)
     })
@@ -200,6 +192,19 @@ function parseTransactions(transactions) {
 
 function addTransactionsToGraph(transactions, graph) {
   transactions.forEach(function(tx) { graph.addTx(tx) })
+}
+
+function mergeMetadata(feesAndValues, metadata) {
+  for(var id in metadata) {
+    var fee = feesAndValues[id].fee
+    if(fee != null) metadata[id].fee = fee
+
+    var value = feesAndValues[id].value
+    if(value < 0) value += fee
+    if(value != null) metadata[id].value = value
+  }
+
+  return metadata
 }
 
 function discoverUsedAddresses(account, api, done) {

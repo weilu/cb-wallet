@@ -1,10 +1,9 @@
 "use strict";
 
 var API = require('cb-blockr')
-var discover = require('bip32-utils').discovery
 var bitcoin = require('bitcoinjs-lib')
-var async = require('async')
 var TxGraph = require('bitcoin-tx-graph')
+var discoverAddresses = require('./discover')
 
 function Wallet(externalAccount, internalAccount, networkName, done) {
   if(arguments.length === 0) {
@@ -24,22 +23,14 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
 
   var that = this
 
-  var functions = [this.externalAccount, this.internalAccount].map(function(account) {
-    return discoverFn(account, that.api)
-  })
-
-  async.parallel(functions, function(err, results) {
+  discoverAddresses(this.externalAccount, this.internalAccount, this.api, function(err, results) {
     if(err) return done(err);
 
-    that.balance = results[0].balance + results[1].balance
+    that.balance = results.balance
+    that.addressIndex = results.addresses.length
+    that.changeAddressIndex = results.changeAddresses.length
 
-    var receiveAddresses = results[0].addresses
-    that.addressIndex = receiveAddresses.length
-
-    var changeAddresses = results[1].addresses
-    that.changeAddressIndex = changeAddresses.length
-
-    var addresses = receiveAddresses.concat(changeAddresses)
+    var addresses = results.addresses.concat(results.changeAddresses)
     fetchTransactions(that.api, addresses, function(err, txs, metadata) {
       if(err) return done(err);
 
@@ -51,22 +42,6 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
       done(null, that)
     })
   })
-}
-
-Wallet.prototype.getUsedAddresses = function() {
-  return deriveAddresses(this.externalAccount, this.addressIndex)
-}
-
-Wallet.prototype.getUsedChangeAddresses = function() {
-  return deriveAddresses(this.internalAccount, this.changeAddressIndex)
-}
-
-function deriveAddresses(account, untilId) {
-  var addresses = []
-  for(var i=0; i<untilId; i++) {
-    addresses.push(account.derive(i).getAddress().toString())
-  }
-  return addresses
 }
 
 Wallet.prototype.getTransactionHistory = function() {
@@ -87,6 +62,14 @@ Wallet.prototype.getTransactionHistory = function() {
   return nodes.map(function(n) {
     return n.tx
   })
+}
+
+Wallet.prototype.getUsedAddresses = function() {
+  return deriveAddresses(this.externalAccount, this.addressIndex)
+}
+
+Wallet.prototype.getUsedChangeAddresses = function() {
+  return deriveAddresses(this.internalAccount, this.changeAddressIndex)
 }
 
 Wallet.prototype.serialize = function() {
@@ -177,9 +160,6 @@ function getAdditionalTxIds(txs) {
   })
 }
 
-function discoverFn(account, api) {
-  return function(callback) { discoverUsedAddresses(account, api, callback) }
-}
 
 function parseTransactions(transactions) {
   return transactions.reduce(function(memo, t) {
@@ -207,38 +187,12 @@ function mergeMetadata(feesAndValues, metadata) {
   return metadata
 }
 
-function discoverUsedAddresses(account, api, done) {
-  var usedAddresses = []
-  var balance = 0
-
-  discover(account, 5, function(addresses, callback) {
-
-    usedAddresses = usedAddresses.concat(addresses)
-
-    api.addresses.get(addresses, function(err, results) {
-      if (err) return callback(err);
-
-      var areSpent = results.map(function(result) {
-        return result.totalReceived > 0
-      })
-
-      balance = results.reduce(function(memo, result) {
-        return memo + result.balance
-      }, balance)
-
-      callback(undefined, areSpent)
-    })
-  }, function(err, k) {
-    if (err) return done(err);
-
-    console.info('Discovered ' + k + ' addresses')
-
-    var data = {
-      addresses: usedAddresses.slice(0, k),
-      balance: balance
-    }
-    done(null, data)
-  })
+function deriveAddresses(account, untilId) {
+  var addresses = []
+  for(var i=0; i<untilId; i++) {
+    addresses.push(account.derive(i).getAddress().toString())
+  }
+  return addresses
 }
 
 module.exports = Wallet

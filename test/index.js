@@ -90,9 +90,9 @@ describe('Common Blockchain Wallet', function() {
   })
 
   describe('getTransactionHistory', function() {
-    var actualHistory
+    var wallet, actualHistory
     before(function() {
-      var wallet = Wallet.deserialize(JSON.stringify(fixtures))
+      wallet = Wallet.deserialize(JSON.stringify(fixtures))
       actualHistory = wallet.getTransactionHistory()
     })
 
@@ -109,8 +109,10 @@ describe('Common Blockchain Wallet', function() {
     })
 
     it('returns the transactions with the expected values & fees', function() {
+      var metadata = wallet.txMetadata
       var actual = actualHistory.map(function(tx) {
-        return { id: tx.getId(), fee: tx.fee, value: tx.value }
+        var id = tx.getId()
+        return { id: id, fee: metadata[id].fee, value: metadata[id].value }
       })
 
       var expected = history.txs.map(function(tx) {

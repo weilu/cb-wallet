@@ -39,13 +39,22 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
     var changeAddresses = results[1].addresses
     that.changeAddressIndex = changeAddresses.length
 
-    fetchTransactions(that.api, receiveAddresses.concat(changeAddresses), function(err, txs, metadata) {
+    var addresses = receiveAddresses.concat(changeAddresses)
+    fetchTransactions(that.api, addresses, function(err, txs, metadata) {
       if(err) return done(err);
 
       addTransactionsToGraph(txs, that.txGraph)
 
+      var feesAndValues = that.txGraph.calculateFeesAndValues(addresses, bitcoin.networks[that.networkName])
+      for(var id in metadata) {
+        var fee = feesAndValues[id].fee
+        if(fee != null) metadata[id].fee = fee
+
+        var value = feesAndValues[id].value
+        if(value < 0) value += fee
+        if(value != null) metadata[id].value = value
+      }
       that.txMetadata = metadata
-      that.txGraph.calculateFeesAndValues(addresses, bitcoin.networks[that.networkName])
 
       done(null, that)
     })
@@ -70,10 +79,10 @@ function deriveAddresses(account, untilId) {
 
 Wallet.prototype.getTransactionHistory = function() {
   var txGraph = this.txGraph
-
   var metadata = this.txMetadata
+
   var nodes = txGraph.getAllNodes().filter(function(n) {
-    return n.tx != null && n.tx.value != null
+    return n.tx != null && metadata[n.id].value != null
   }).sort(function(a, b) {
     var confDiff = metadata[a.id].confirmations - metadata[b.id].confirmations
     if(confDiff !== 0) {
@@ -81,12 +90,6 @@ Wallet.prototype.getTransactionHistory = function() {
     }
 
     return txGraph.compareNodes(a, b)
-  })
-
-  nodes.forEach(function(n) {
-    if(n.tx.value < 0) {
-      n.tx.value += n.tx.fee
-    }
   })
 
   return nodes.map(function(n) {

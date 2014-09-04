@@ -42,6 +42,16 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
   })
 }
 
+Wallet.prototype.getBalance = function() {
+  var metadata = this.txMetadata
+  return this.txGraph.heads.reduce(function(balance, node) {
+    var value = metadata[node.id].value
+    if(value == null || value <= 0) return balance;
+
+    return balance + value
+  }, 0)
+}
+
 Wallet.prototype.getTransactionHistory = function() {
   var txGraph = this.txGraph
   var metadata = this.txMetadata

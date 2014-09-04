@@ -84,37 +84,49 @@ describe('Common Blockchain Wallet', function() {
     })
   })
 
-  describe('getTransactionHistory', function() {
-    var wallet, actualHistory
+  describe('non-network dependent tests', function() {
+    var wallet
     before(function() {
       wallet = Wallet.deserialize(JSON.stringify(fixtures))
-      actualHistory = wallet.getTransactionHistory()
     })
 
-    it('returns the expected transactions in expected order', function() {
-      var txIds = actualHistory.map(function(tx) {
-        return tx.getId()
+    describe('getBalance', function() {
+      it('works', function() {
+        assert.equal(wallet.getBalance(), 0)
       })
-
-      var expectedIds = history.txs.map(function(tx) {
-        return tx.id
-      })
-
-      assert.deepEqual(txIds, expectedIds)
     })
 
-    it('returns the transactions with the expected values & fees', function() {
-      var metadata = wallet.txMetadata
-      var actual = actualHistory.map(function(tx) {
-        var id = tx.getId()
-        return { id: id, fee: metadata[id].fee, value: metadata[id].value }
+    describe('getTransactionHistory', function() {
+      var actualHistory
+      before(function() {
+        actualHistory = wallet.getTransactionHistory()
       })
 
-      var expected = history.txs.map(function(tx) {
-        return { id: tx.id, fee: tx.fee, value: tx.value }
+      it('returns the expected transactions in expected order', function() {
+        var txIds = actualHistory.map(function(tx) {
+          return tx.getId()
+        })
+
+        var expectedIds = history.txs.map(function(tx) {
+          return tx.id
+        })
+
+        assert.deepEqual(txIds, expectedIds)
       })
 
-      assert.deepEqual(actual, expected)
+      it('returns the transactions with the expected values & fees', function() {
+        var metadata = wallet.txMetadata
+        var actual = actualHistory.map(function(tx) {
+          var id = tx.getId()
+          return { id: id, fee: metadata[id].fee, value: metadata[id].value }
+        })
+
+        var expected = history.txs.map(function(tx) {
+          return { id: tx.id, fee: tx.fee, value: tx.value }
+        })
+
+        assert.deepEqual(actual, expected)
+      })
     })
   })
 })

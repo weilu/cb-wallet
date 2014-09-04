@@ -29,10 +29,6 @@ describe('Common Blockchain Wallet', function() {
           assert.equal(wallet.txGraph.heads.length, 1)
         })
 
-        it('assigns balance', function() {
-          assert.equal(wallet.balance, 0)
-        })
-
         it('assigns externalAccount and internalAccount ', function() {
           assert.equal(wallet.externalAccount.toBase58(), fixtures.externalAccount)
           assert.equal(wallet.internalAccount.toBase58(), fixtures.internalAccount)
@@ -78,7 +74,6 @@ describe('Common Blockchain Wallet', function() {
 
         assert.equal(parsed.txGraph.heads.length, wallet.txGraph.heads.length)
         assert.equal(parsed.txGraph.heads[0].id, wallet.txGraph.heads[0].id)
-        assert.equal(parsed.balance, wallet.balance)
         assert.equal(parsed.externalAccount.toBase58(), wallet.externalAccount.toBase58())
         assert.equal(parsed.internalAccount.toBase58(), wallet.internalAccount.toBase58())
         assert.equal(parsed.addressIndex, wallet.addressIndex)

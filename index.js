@@ -22,14 +22,13 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
 
   var that = this
 
-  discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, results) {
+  discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, addresses, changeAddresses) {
     if(err) return done(err);
 
-    that.balance = results.balance
-    that.addressIndex = results.addresses.length
-    that.changeAddressIndex = results.changeAddresses.length
+    that.addressIndex = addresses.length
+    that.changeAddressIndex = changeAddresses.length
 
-    var addresses = results.addresses.concat(results.changeAddresses)
+    var addresses = addresses.concat(changeAddresses)
     fetchTransactions(that.api, addresses, function(err, txs, metadata) {
       if(err) return done(err);
 
@@ -85,7 +84,6 @@ Wallet.prototype.serialize = function() {
     internalAccount: this.internalAccount.toBase58(),
     addressIndex: this.addressIndex,
     changeAddressIndex: this.changeAddressIndex,
-    balance: this.balance,
     networkName: this.networkName,
     txs: txs,
     txMetadata: this.txMetadata
@@ -99,7 +97,6 @@ Wallet.deserialize = function(json) {
   wallet.internalAccount = bitcoin.HDNode.fromBase58(deserialized.internalAccount)
   wallet.addressIndex = deserialized.addressIndex
   wallet.changeAddressIndex = deserialized.changeAddressIndex
-  wallet.balance = deserialized.balance
   wallet.networkName = deserialized.networkName
   wallet.txMetadata = deserialized.txMetadata
 

@@ -11,19 +11,13 @@ function discoverAddressesForAccounts(api, externalAccount, internalAccount, cal
 
   async.parallel(functions, function(err, results) {
     if(err) return callback(err);
-    var balanceAndAddresses = {}
 
-    balanceAndAddresses.balance = results[0].balance + results[1].balance
-    balanceAndAddresses.addresses = results[0].addresses
-    balanceAndAddresses.changeAddresses = results[1].addresses
-
-    callback(null, balanceAndAddresses)
+    callback(null, results[0], results[1])
   })
 }
 
 function discoverUsedAddresses(account, api, done) {
   var usedAddresses = []
-  var balance = 0
 
   discover(account, 5, function(addresses, callback) {
 
@@ -36,10 +30,6 @@ function discoverUsedAddresses(account, api, done) {
         return result.totalReceived > 0
       })
 
-      balance = results.reduce(function(memo, result) {
-        return memo + result.balance
-      }, balance)
-
       callback(undefined, areSpent)
     })
   }, function(err, k) {
@@ -47,11 +37,7 @@ function discoverUsedAddresses(account, api, done) {
 
     console.info('Discovered ' + k + ' addresses')
 
-    var data = {
-      addresses: usedAddresses.slice(0, k),
-      balance: balance
-    }
-    done(null, data)
+    done(null, usedAddresses.slice(0, k))
   })
 }
 

@@ -88,6 +88,18 @@ describe('Common Blockchain Wallet', function() {
       })
     })
 
+    describe('getNextAddress', function() {
+      it('works', function() {
+        assert.deepEqual(wallet.getNextAddress(), 'mk9p4BPMSTK5C5zZ3Gf6mWZNtBQyC3RC7K')
+      })
+    })
+
+    describe('getNextChangeAddress', function() {
+      it('works', function() {
+        assert.deepEqual(wallet.getNextChangeAddress(), 'mrsMaRK7PNQt1i9sv11Dx8ZCE6aZxDKCyi')
+      })
+    })
+
     describe('getTransactionHistory', function() {
       var actualHistory
       before(function() {

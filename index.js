@@ -52,6 +52,14 @@ Wallet.prototype.getBalance = function() {
   }, 0)
 }
 
+Wallet.prototype.getNextChangeAddress = function() {
+  return this.internalAccount.derive(this.changeAddresses.length).getAddress().toString()
+}
+
+Wallet.prototype.getNextAddress = function() {
+  return this.externalAccount.derive(this.addresses.length).getAddress().toString()
+}
+
 Wallet.prototype.processTx = function(tx, prevTx, txConf) {
   this.txGraph.addTx(tx)
   this.txGraph.addTx(prevTx)
@@ -157,14 +165,6 @@ Wallet.prototype.getTransactionHistory = function() {
   return nodes.map(function(n) {
     return n.tx
   })
-}
-
-Wallet.prototype.getNextChangeAddress = function() {
-  return this.internalAccount.derive(this.changeAddresses.length).getAddress().toString()
-}
-
-Wallet.prototype.getNextAddress = function() {
-  return this.externalAccount.derive(this.addresses.length).getAddress().toString()
 }
 
 Wallet.prototype.serialize = function() {

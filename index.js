@@ -60,6 +60,17 @@ Wallet.prototype.getNextAddress = function() {
   return this.externalAccount.derive(this.addresses.length).getAddress().toString()
 }
 
+Wallet.prototype.getPrivateKeyForAddress = function(address) {
+  var index
+  if((index = this.addresses.indexOf(address)) > -1) {
+    return this.externalAccount.derive(index).privKey
+  } else if((index = this.changeAddresses.indexOf(address)) > -1) {
+    return this.internalAccount.derive(index).privKey
+  } else {
+    throw new Error('Unknown address. Make sure the address is from the keychain and has been generated.')
+  }
+}
+
 Wallet.prototype.processTx = function(tx, prevTx, txConf) {
   this.txGraph.addTx(tx)
   this.txGraph.addTx(prevTx)

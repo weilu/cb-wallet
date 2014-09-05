@@ -100,6 +100,25 @@ describe('Common Blockchain Wallet', function() {
       })
     })
 
+    describe('getPrivateKeyForAddress', function(){
+      it('returns the private key for the given address', function(){
+        assert.equal(
+          wallet.getPrivateKeyForAddress(addresses[1]).toWIF(),
+          wallet.externalAccount.derive(1).privKey.toWIF()
+        )
+        assert.equal(
+          wallet.getPrivateKeyForAddress(changeAddresses[0]).toWIF(),
+          wallet.internalAccount.derive(0).privKey.toWIF()
+        )
+      })
+
+      it('raises an error when address is not found', function(){
+        assert.throws(function() {
+          wallet.getPrivateKeyForAddress(changeAddresses[changeAddresses.length])
+        }, /Unknown address. Make sure the address is from the keychain and has been generated./)
+      })
+    })
+
     describe('getTransactionHistory', function() {
       var actualHistory
       before(function() {

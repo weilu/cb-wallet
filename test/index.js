@@ -38,9 +38,9 @@ describe('Common Blockchain Wallet', function() {
           assert.equal(wallet.internalAccount.toBase58(), fixtures.internalAccount)
         })
 
-        it('assigns addressIndex and changeAddressIndex', function() {
-          assert.equal(wallet.addressIndex, 5)
-          assert.equal(wallet.changeAddressIndex, 18)
+        it('assigns addresses and changeAddresses', function() {
+          assert.deepEqual(wallet.addresses, addresses)
+          assert.deepEqual(wallet.changeAddresses, changeAddresses)
         })
 
         it('assigns networkName', function() {
@@ -57,18 +57,6 @@ describe('Common Blockchain Wallet', function() {
             assert.equal(typeof wallet.txMetadata[key].confirmations, 'number')
           }
         })
-      })
-    })
-
-    describe('getUsedAddresses', function() {
-      it('returns a list of used receive addresses in order', function() {
-        assert.deepEqual(wallet.getUsedAddresses(), addresses)
-      })
-    })
-
-    describe('getUsedChangeAddresses', function() {
-      it('returns a list of used change addresses in order', function() {
-        assert.deepEqual(wallet.getUsedChangeAddresses(), changeAddresses)
       })
     })
 
@@ -144,8 +132,8 @@ describe('Common Blockchain Wallet', function() {
         value = 500000
         unspentTxs = []
 
-        address1 = wallet.getUsedAddresses()[0]
-        address2 = wallet.getUsedChangeAddresses()[0]
+        address1 = wallet.addresses[0]
+        address2 = wallet.changeAddresses[0]
 
         var prevTxs = []
 

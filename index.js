@@ -25,8 +25,8 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
   discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, addresses, changeAddresses) {
     if(err) return done(err);
 
-    that.addressIndex = addresses.length
-    that.changeAddressIndex = changeAddresses.length
+    that.addresses = addresses
+    that.changeAddresses = changeAddresses
 
     var addresses = addresses.concat(changeAddresses)
     fetchTransactions(that.api, addresses, function(err, txs, metadata) {
@@ -58,14 +58,14 @@ Wallet.prototype.processTx = function(tx, prevTx, txConf) {
   this.txMetadata[tx.getId()] = { confirmations: txConf }
 
   //FIXME: make me more effecient
-  var myAddresses = this.getUsedAddresses().concat(this.getUsedChangeAddresses())
+  var myAddresses = this.addresses.concat(this.changeAddresses)
   var feesAndValues = this.txGraph.calculateFeesAndValues(myAddresses, bitcoin.networks[this.networkName])
   this.txMetadata = mergeMetadata(feesAndValues, this.txMetadata)
 }
 
 Wallet.prototype.createTx = function(to, value, fee) {
   var network = bitcoin.networks[this.networkName]
-  var myAddresses = this.getUsedAddresses().concat(this.getUsedChangeAddresses())
+  var myAddresses = this.addresses.concat(this.changeAddresses)
   var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses)
 
   var accum = 0
@@ -159,20 +159,12 @@ Wallet.prototype.getTransactionHistory = function() {
   })
 }
 
-Wallet.prototype.getUsedAddresses = function() {
-  return deriveAddresses(this.externalAccount, this.addressIndex)
-}
-
-Wallet.prototype.getUsedChangeAddresses = function() {
-  return deriveAddresses(this.internalAccount, this.changeAddressIndex)
-}
-
 Wallet.prototype.getNextChangeAddress = function() {
-  return this.internalAccount.derive(this.changeAddressIndex).getAddress().toString()
+  return this.internalAccount.derive(this.changeAddresses.length).getAddress().toString()
 }
 
 Wallet.prototype.getNextAddress = function() {
-  return this.externalAccount.derive(this.addressIndex).getAddress().toString()
+  return this.externalAccount.derive(this.addresses.length).getAddress().toString()
 }
 
 Wallet.prototype.serialize = function() {
@@ -187,8 +179,8 @@ Wallet.prototype.serialize = function() {
   return JSON.stringify({
     externalAccount: this.externalAccount.toBase58(),
     internalAccount: this.internalAccount.toBase58(),
-    addressIndex: this.addressIndex,
-    changeAddressIndex: this.changeAddressIndex,
+    addressIndex: this.addresses.length,
+    changeAddressIndex: this.changeAddresses.length,
     networkName: this.networkName,
     txs: txs,
     txMetadata: this.txMetadata
@@ -200,8 +192,8 @@ Wallet.deserialize = function(json) {
   var deserialized = JSON.parse(json)
   wallet.externalAccount = bitcoin.HDNode.fromBase58(deserialized.externalAccount)
   wallet.internalAccount = bitcoin.HDNode.fromBase58(deserialized.internalAccount)
-  wallet.addressIndex = deserialized.addressIndex
-  wallet.changeAddressIndex = deserialized.changeAddressIndex
+  wallet.addresses = deriveAddresses(wallet.externalAccount, deserialized.addressIndex)
+  wallet.changeAddresses = deriveAddresses(wallet.internalAccount, deserialized.changeAddressIndex)
   wallet.networkName = deserialized.networkName
   wallet.txMetadata = deserialized.txMetadata
 

@@ -119,6 +119,10 @@ Wallet.prototype.createTx = function(to, value, fee) {
     }
   })
 
+  addresses.forEach(function(address, i) {
+    tx.sign(i, that.getPrivateKeyForAddress(address))
+  })
+
   return tx
 }
 

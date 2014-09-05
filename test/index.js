@@ -1,5 +1,6 @@
 var assert = require('assert')
 var TxGraph = require('bitcoin-tx-graph')
+var bitcoin = require('bitcoinjs-lib')
 var fixtures = require('./wallet')
 var history = require('./history')
 var addresses = require('./addresses').addresses
@@ -126,6 +127,89 @@ describe('Common Blockchain Wallet', function() {
         })
 
         assert.deepEqual(actual, expected)
+      })
+    })
+
+    describe('createTx', function() {
+      this.timeout(3000)
+
+      var to, value, unspentTxs
+      var address1, address2
+
+      before(function(){
+        to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
+        value = 500000
+        unspentTxs = []
+
+        address1 = wallet.getUsedAddresses()[0]
+        address2 = wallet.getUsedChangeAddresses()[0]
+
+        var prevTxs = []
+
+        var pair0 = createTxPair(address1, 400000) // not enough for value
+        wallet.processTx(pair0.tx, pair0.prevTx, 0)
+        unspentTxs.push(pair0.tx)
+
+        var pair1 = createTxPair(address1, 500000) // not enough for only value
+        wallet.processTx(pair1.tx, pair1.prevTx, 0)
+        unspentTxs.push(pair1.tx)
+
+        var pair2 = createTxPair(address2, 510000) // enough for value and fee
+        wallet.processTx(pair2.tx, pair2.prevTx, 0)
+        unspentTxs.push(pair2.tx)
+
+        function createTxPair(address, amount) {
+          var prevTx = new bitcoin.Transaction()
+          prevTx.addInput(new bitcoin.Transaction(), 0)
+          prevTx.addOutput(to, amount)
+
+          var tx = new bitcoin.Transaction()
+          tx.addInput(prevTx, 0)
+          tx.addOutput(address, amount)
+
+          return { prevTx: prevTx, tx: tx }
+        }
+      })
+
+      describe('choosing utxo', function(){
+        it('takes fees into account', function(){
+          var tx = wallet.createTx(to, value)
+
+          assert.equal(tx.ins.length, 1)
+          assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash())
+          assert.equal(tx.ins[0].index, 0)
+        })
+      })
+
+      describe('transaction fee', function(){
+        it('allows fee to be specified', function(){
+          var fee = 30000
+          var tx = wallet.createTx(to, value, fee)
+
+          assert.equal(getFee(tx), fee)
+        })
+
+        it('allows fee to be set to zero', function(){
+          value = 510000
+          var fee = 0
+          var tx = wallet.createTx(to, value, fee)
+
+          assert.equal(getFee(tx), fee)
+        })
+
+        function getFee(tx) {
+          var inputValue = tx.ins.reduce(function(memo, input){
+            var id = Array.prototype.reverse.call(input.hash).toString('hex')
+            var prevTx = unspentTxs.filter(function(t) {
+              return t.getId() === id
+            })[0]
+            return memo + prevTx.outs[0].value
+          }, 0)
+
+          return tx.outs.reduce(function(memo, output){
+            return memo - output.value
+          }, inputValue)
+        }
       })
     })
   })

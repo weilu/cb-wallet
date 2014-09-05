@@ -52,6 +52,93 @@ Wallet.prototype.getBalance = function() {
   }, 0)
 }
 
+Wallet.prototype.processTx = function(tx, prevTx, txConf) {
+  this.txGraph.addTx(tx)
+  this.txGraph.addTx(prevTx)
+  this.txMetadata[tx.getId()] = { confirmations: txConf }
+
+  //FIXME: make me more effecient
+  var myAddresses = this.getUsedAddresses().concat(this.getUsedChangeAddresses())
+  var feesAndValues = this.txGraph.calculateFeesAndValues(myAddresses, bitcoin.networks[this.networkName])
+  this.txMetadata = mergeMetadata(feesAndValues, this.txMetadata)
+}
+
+Wallet.prototype.createTx = function(to, value, fee) {
+  var network = bitcoin.networks[this.networkName]
+  var myAddresses = this.getUsedAddresses().concat(this.getUsedChangeAddresses())
+  var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses)
+
+  var accum = 0
+  var subTotal = value
+  var addresses = []
+
+  var tx = new bitcoin.Transaction()
+  tx.addOutput(to, value)
+
+  var that = this
+  utxos.some(function(unspent) {
+    tx.addInput(unspent.id, unspent.index)
+    addresses.push(unspent.address)
+
+    var estimatedFee
+    if(fee == undefined) {
+      estimatedFee = estimateFeePadChangeOutput(tx, network)
+    } else {
+      estimatedFee = fee
+    }
+
+    accum += unspent.value
+    subTotal = value + estimatedFee
+    if (accum >= subTotal) {
+      var change = accum - subTotal
+
+      if (change > network.dustThreshold) {
+        tx.addOutput(that.getNextChangeAddress(), change)
+      }
+
+      return true
+    }
+  })
+
+  return tx
+}
+
+function getCandidateOutputs(headNodes, metadata, network, myAddresses) {
+  var unspentNodes = headNodes.filter(function(n) {
+    var value = metadata[n.id].value
+    return value > 0
+  })
+
+  var unspentOutputs = unspentNodes.reduce(function(unspentOutputs, node) {
+    node.tx.outs.forEach(function(out, i) {
+      var address = bitcoin.Address.fromOutputScript(out.script, network).toString()
+      if(myAddresses.indexOf(address) >= 0) {
+        unspentOutputs.push({
+          id: node.id,
+          address: address,
+          value: out.value,
+          index: i
+        })
+      }
+    })
+
+    return unspentOutputs
+  }, [])
+
+
+  return unspentOutputs.sort(function(o1, o2){
+    return o2.value - o1.value
+  })
+}
+
+function estimateFeePadChangeOutput(tx, network) {
+  var tmpTx = tx.clone()
+  var tmpAddress = bitcoin.Address.fromOutputScript(tx.outs[0].script, network)
+  tmpTx.addOutput(tmpAddress, network.dustSoftThreshold || 0)
+
+  return network.estimateFee(tmpTx)
+}
+
 Wallet.prototype.getTransactionHistory = function() {
   var txGraph = this.txGraph
   var metadata = this.txMetadata
@@ -78,6 +165,14 @@ Wallet.prototype.getUsedAddresses = function() {
 
 Wallet.prototype.getUsedChangeAddresses = function() {
   return deriveAddresses(this.internalAccount, this.changeAddressIndex)
+}
+
+Wallet.prototype.getNextChangeAddress = function() {
+  return this.internalAccount.derive(this.changeAddressIndex).getAddress().toString()
+}
+
+Wallet.prototype.getNextAddress = function() {
+  return this.externalAccount.derive(this.addressIndex).getAddress().toString()
 }
 
 Wallet.prototype.serialize = function() {

@@ -1,6 +1,9 @@
 var assert = require('assert')
 var TxGraph = require('bitcoin-tx-graph')
 var bitcoin = require('bitcoinjs-lib')
+var Transaction = bitcoin.Transaction
+var Address = bitcoin.Address
+var testnet = bitcoin.networks.testnet
 var fixtures = require('./wallet')
 var history = require('./history')
 var addresses = require('./addresses').addresses
@@ -159,16 +162,49 @@ describe('Common Blockchain Wallet', function() {
         unspentTxs.push(pair2.tx)
 
         function createTxPair(address, amount) {
-          var prevTx = new bitcoin.Transaction()
-          prevTx.addInput(new bitcoin.Transaction(), 0)
+          var prevTx = new Transaction()
+          prevTx.addInput(new Transaction(), 0)
           prevTx.addOutput(to, amount)
 
-          var tx = new bitcoin.Transaction()
+          var tx = new Transaction()
           tx.addInput(prevTx, 0)
           tx.addOutput(address, amount)
 
           return { prevTx: prevTx, tx: tx }
         }
+      })
+
+      describe('transaction outputs', function(){
+        it('includes the specified address and amount', function(){
+          var tx = wallet.createTx(to, value)
+
+          assert.equal(tx.outs.length, 1)
+          var out = tx.outs[0]
+          var outAddress = Address.fromOutputScript(out.script, testnet)
+
+          assert.equal(outAddress.toString(), to)
+          assert.equal(out.value, value)
+        })
+
+        describe('change', function(){
+          it('uses the next change address', function(){
+            var fee = 0
+            var tx = wallet.createTx(to, value, fee)
+
+            assert.equal(tx.outs.length, 2)
+            var out = tx.outs[1]
+            var outAddress = Address.fromOutputScript(out.script, testnet)
+
+            assert.equal(outAddress.toString(), wallet.getNextChangeAddress())
+            assert.equal(out.value, 10000)
+          })
+
+          it('skips change if it is not above dust threshold', function(){
+            var fee = 14570
+            var tx = wallet.createTx(to, value)
+            assert.equal(tx.outs.length, 1)
+          })
+        })
       })
 
       describe('choosing utxo', function(){

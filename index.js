@@ -83,12 +83,13 @@ Wallet.prototype.processTx = function(tx, prevTx, txConf) {
   this.txMetadata = mergeMetadata(feesAndValues, this.txMetadata)
 }
 
-Wallet.prototype.createTx = function(to, value, fee) {
+Wallet.prototype.createTx = function(to, value, fee, minConf) {
   var network = bitcoin.networks[this.networkName]
   assert(value > network.dustThreshold, value + ' must be above dust threshold (' + network.dustThreshold + ' Satoshis)')
 
   var myAddresses = this.addresses.concat(this.changeAddresses)
-  var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses)
+  if(minConf == null) minConf = 1
+  var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses, minConf)
 
   var accum = 0
   var subTotal = value
@@ -131,10 +132,10 @@ Wallet.prototype.createTx = function(to, value, fee) {
   return tx
 }
 
-function getCandidateOutputs(headNodes, metadata, network, myAddresses) {
+function getCandidateOutputs(headNodes, metadata, network, myAddresses, minConf) {
   var unspentNodes = headNodes.filter(function(n) {
-    var value = metadata[n.id].value
-    return value > 0
+    var tx = metadata[n.id]
+    return tx.value > 0 && tx.confirmations >= minConf
   })
 
   var unspentOutputs = unspentNodes.reduce(function(unspentOutputs, node) {

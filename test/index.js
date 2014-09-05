@@ -168,16 +168,20 @@ describe('Common Blockchain Wallet', function() {
         var prevTxs = []
 
         var pair0 = createTxPair(address1, 400000) // not enough for value
-        wallet.processTx(pair0.tx, pair0.prevTx, 0)
+        wallet.processTx(pair0.tx, pair0.prevTx, 1)
         unspentTxs.push(pair0.tx)
 
         var pair1 = createTxPair(address1, 500000) // not enough for only value
-        wallet.processTx(pair1.tx, pair1.prevTx, 0)
+        wallet.processTx(pair1.tx, pair1.prevTx, 1)
         unspentTxs.push(pair1.tx)
 
         var pair2 = createTxPair(address2, 510000) // enough for value and fee
-        wallet.processTx(pair2.tx, pair2.prevTx, 0)
+        wallet.processTx(pair2.tx, pair2.prevTx, 1)
         unspentTxs.push(pair2.tx)
+
+        var pair3 = createTxPair(address2, 520000) // enough for value and fee
+        wallet.processTx(pair3.tx, pair3.prevTx, 0)
+        unspentTxs.push(pair3.tx)
 
         function createTxPair(address, amount) {
           var prevTx = new Transaction()
@@ -231,6 +235,14 @@ describe('Common Blockchain Wallet', function() {
 
           assert.equal(tx.ins.length, 1)
           assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash())
+          assert.equal(tx.ins[0].index, 0)
+        })
+
+        it('respects specified minConf', function(){
+          var tx = wallet.createTx(to, value, null, 0)
+
+          assert.equal(tx.ins.length, 1)
+          assert.deepEqual(tx.ins[0].hash, unspentTxs[3].getHash())
           assert.equal(tx.ins[0].index, 0)
         })
       })

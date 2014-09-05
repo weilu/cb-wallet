@@ -3,6 +3,7 @@
 var API = require('cb-blockr')
 var bitcoin = require('bitcoinjs-lib')
 var TxGraph = require('bitcoin-tx-graph')
+var assert = require('assert')
 var discoverAddresses = require('./network').discoverAddresses
 var fetchTransactions = require('./network').fetchTransactions
 
@@ -84,6 +85,8 @@ Wallet.prototype.processTx = function(tx, prevTx, txConf) {
 
 Wallet.prototype.createTx = function(to, value, fee) {
   var network = bitcoin.networks[this.networkName]
+  assert(value > network.dustThreshold, value + ' must be above dust threshold (' + network.dustThreshold + ' Satoshis)')
+
   var myAddresses = this.addresses.concat(this.changeAddresses)
   var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses)
 
@@ -118,6 +121,8 @@ Wallet.prototype.createTx = function(to, value, fee) {
       return true
     }
   })
+
+  assert(accum >= subTotal, 'Not enough funds (incl. fee): ' + accum + ' < ' + subTotal)
 
   addresses.forEach(function(address, i) {
     tx.sign(i, that.getPrivateKeyForAddress(address))

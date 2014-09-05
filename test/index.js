@@ -154,8 +154,6 @@ describe('Common Blockchain Wallet', function() {
     })
 
     describe('createTx', function() {
-      this.timeout(3000)
-
       var to, value, unspentTxs
       var address1, address2
 
@@ -281,6 +279,26 @@ describe('Common Blockchain Wallet', function() {
 
           assert(Transaction.prototype.sign.calledWith(0, wallet.getPrivateKeyForAddress(address2)))
           assert(Transaction.prototype.sign.calledWith(1, wallet.getPrivateKeyForAddress(address1)))
+        })
+      })
+
+      describe('when value is below dust threshold', function(){
+        it('throws an error', function(){
+          var value = 546
+
+          assert.throws(function() {
+            wallet.createTx(to, value)
+          }, /546 must be above dust threshold \(546 Satoshis\)/)
+        })
+      })
+
+      describe('when there is not enough money', function(){
+        it('throws an error', function(){
+          var value = 1400001
+
+          assert.throws(function() {
+            wallet.createTx(to, value)
+          }, /Not enough funds \(incl. fee\): 1410000 < 1410001/)
         })
       })
     })

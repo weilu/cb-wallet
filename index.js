@@ -72,14 +72,22 @@ Wallet.prototype.getPrivateKeyForAddress = function(address) {
   }
 }
 
-Wallet.prototype.processTx = function(txs, confirmations) {
-  txs.forEach(function(tx) {
-    this.txGraph.addTx(tx)
-  }, this)
-
-  for(var id in confirmations) {
-    this.txMetadata[id] = { confirmations: confirmations[id] }
+// param: `txObj` or
+// `[{tx: txObj1, confirmations: n1}, {tx: txObj2, confirmations: n2}]`
+Wallet.prototype.processTx = function(txs) {
+  if(!Array.isArray(txs)) {
+    txs = [{tx: txs}]
   }
+
+  txs.forEach(function(obj) {
+    this.txGraph.addTx(obj.tx)
+
+    var id = obj.tx.getId()
+    this.txMetadata[id] = this.txMetadata[id] || { confirmations: null }
+    if(obj.confirmations != null) {
+      this.txMetadata[id].confirmations = obj.confirmations
+    }
+  }, this)
 
   //FIXME: make me more effecient
   var myAddresses = this.addresses.concat(this.changeAddresses)

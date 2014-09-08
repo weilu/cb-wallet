@@ -121,9 +121,10 @@ describe('Common Blockchain Wallet', function() {
     })
 
     describe('processTx', function() {
-      var prevTx, tx, tmpWallet
+      var prevTx, tx, externalAddress, tmpWallet
 
       beforeEach(function() {
+        externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
         tmpWallet = Wallet.deserialize(JSON.stringify(fixtures))
         var address = tmpWallet.addresses[0]
 
@@ -133,26 +134,42 @@ describe('Common Blockchain Wallet', function() {
 
         tx = new Transaction()
         tx.addInput(prevTx, 0)
-        tx.addOutput('mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs', 50000)
+        tx.addOutput(externalAddress, 50000)
         tx.addOutput(address, 130000)
       })
 
       it('adds the tx and prevTx to graph', function() {
-        tmpWallet.processTx([tx, prevTx])
+        tmpWallet.processTx([{tx: tx}, {tx: prevTx}])
         var graph = tmpWallet.txGraph
         assert.deepEqual(graph.findNodeById(tx.getId()).tx, tx)
         assert.deepEqual(graph.findNodeById(prevTx.getId()).tx, prevTx)
       })
 
       it('attaches the txConf and calculate fees & values for tx', function() {
-        var confirmations = {}
-        confirmations[tx.getId()] = 3
-
-        tmpWallet.processTx([tx, prevTx], confirmations)
+        tmpWallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
         var metadata = tmpWallet.txMetadata[tx.getId()]
         assert.equal(metadata.confirmations, 3)
         assert.equal(metadata.value, -50000)
         assert.equal(metadata.fee, 20000)
+      })
+
+      describe('when a single tx is passed in', function() {
+        it('works', function() {
+          tmpWallet.processTx([{tx: tx}, {tx: prevTx}])
+
+          var outgoingTx = new Transaction()
+          outgoingTx.addInput(tx, 1)
+          outgoingTx.addOutput(externalAddress, 120000)
+
+          tmpWallet.processTx(outgoingTx)
+
+          var graph = tmpWallet.txGraph
+          assert.deepEqual(graph.findNodeById(outgoingTx.getId()).tx, outgoingTx)
+          var metadata = tmpWallet.txMetadata[outgoingTx.getId()]
+          assert.equal(metadata.confirmations, undefined)
+          assert.equal(metadata.value, -120000)
+          assert.equal(metadata.fee, 10000)
+        })
       })
     })
 
@@ -202,26 +219,21 @@ describe('Common Blockchain Wallet', function() {
         address2 = wallet.changeAddresses[0]
 
         var prevTxs = []
-        var confirmations = {}
 
         var pair0 = createTxPair(address1, 400000) // not enough for value
-        confirmations[pair0.tx.getId()] = 1
-        wallet.processTx([pair0.tx, pair0.prevTx], confirmations)
+        wallet.processTx([{tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx}])
         unspentTxs.push(pair0.tx)
 
         var pair1 = createTxPair(address1, 500000) // not enough for only value
-        confirmations[pair1.tx.getId()] = 1
-        wallet.processTx([pair1.tx, pair1.prevTx], confirmations)
+        wallet.processTx([{tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx}])
         unspentTxs.push(pair1.tx)
 
         var pair2 = createTxPair(address2, 510000) // enough for value and fee
-        confirmations[pair2.tx.getId()] = 1
-        wallet.processTx([pair2.tx, pair2.prevTx], confirmations)
+        wallet.processTx([{tx: pair2.tx, confirmations: 1}, {tx: pair2.prevTx}])
         unspentTxs.push(pair2.tx)
 
         var pair3 = createTxPair(address2, 520000) // enough for value and fee
-        confirmations[pair3.tx.getId()] = 0
-        wallet.processTx([pair3.tx, pair3.prevTx], confirmations)
+        wallet.processTx([{tx: pair3.tx, confirmations: 0}, {tx: pair3.prevTx}])
         unspentTxs.push(pair3.tx)
 
         function createTxPair(address, amount) {

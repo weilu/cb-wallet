@@ -120,6 +120,42 @@ describe('Common Blockchain Wallet', function() {
       })
     })
 
+    describe('processTx', function() {
+      var prevTx, tx, tmpWallet
+
+      beforeEach(function() {
+        tmpWallet = Wallet.deserialize(JSON.stringify(fixtures))
+        var address = tmpWallet.addresses[0]
+
+        prevTx = new Transaction()
+        prevTx.addInput(new Transaction(), 0)
+        prevTx.addOutput(address, 200000)
+
+        tx = new Transaction()
+        tx.addInput(prevTx, 0)
+        tx.addOutput('mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs', 50000)
+        tx.addOutput(address, 130000)
+      })
+
+      it('adds the tx and prevTx to graph', function() {
+        tmpWallet.processTx([tx, prevTx])
+        var graph = tmpWallet.txGraph
+        assert.deepEqual(graph.findNodeById(tx.getId()).tx, tx)
+        assert.deepEqual(graph.findNodeById(prevTx.getId()).tx, prevTx)
+      })
+
+      it('attaches the txConf and calculate fees & values for tx', function() {
+        var confirmations = {}
+        confirmations[tx.getId()] = 3
+
+        tmpWallet.processTx([tx, prevTx], confirmations)
+        var metadata = tmpWallet.txMetadata[tx.getId()]
+        assert.equal(metadata.confirmations, 3)
+        assert.equal(metadata.value, -50000)
+        assert.equal(metadata.fee, 20000)
+      })
+    })
+
     describe('getTransactionHistory', function() {
       var actualHistory
       before(function() {
@@ -166,21 +202,26 @@ describe('Common Blockchain Wallet', function() {
         address2 = wallet.changeAddresses[0]
 
         var prevTxs = []
+        var confirmations = {}
 
         var pair0 = createTxPair(address1, 400000) // not enough for value
-        wallet.processTx(pair0.tx, pair0.prevTx, 1)
+        confirmations[pair0.tx.getId()] = 1
+        wallet.processTx([pair0.tx, pair0.prevTx], confirmations)
         unspentTxs.push(pair0.tx)
 
         var pair1 = createTxPair(address1, 500000) // not enough for only value
-        wallet.processTx(pair1.tx, pair1.prevTx, 1)
+        confirmations[pair1.tx.getId()] = 1
+        wallet.processTx([pair1.tx, pair1.prevTx], confirmations)
         unspentTxs.push(pair1.tx)
 
         var pair2 = createTxPair(address2, 510000) // enough for value and fee
-        wallet.processTx(pair2.tx, pair2.prevTx, 1)
+        confirmations[pair2.tx.getId()] = 1
+        wallet.processTx([pair2.tx, pair2.prevTx], confirmations)
         unspentTxs.push(pair2.tx)
 
         var pair3 = createTxPair(address2, 520000) // enough for value and fee
-        wallet.processTx(pair3.tx, pair3.prevTx, 0)
+        confirmations[pair3.tx.getId()] = 0
+        wallet.processTx([pair3.tx, pair3.prevTx], confirmations)
         unspentTxs.push(pair3.tx)
 
         function createTxPair(address, amount) {

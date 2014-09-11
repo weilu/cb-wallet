@@ -226,23 +226,24 @@ describe('Common Blockchain Wallet', function() {
         address1 = wallet.addresses[0]
         address2 = wallet.changeAddresses[0]
 
-        var prevTxs = []
-
         var pair0 = createTxPair(address1, 400000) // not enough for value
-        wallet.processTx([{tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx}])
         unspentTxs.push(pair0.tx)
 
         var pair1 = createTxPair(address1, 500000) // not enough for only value
-        wallet.processTx([{tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx}])
         unspentTxs.push(pair1.tx)
 
         var pair2 = createTxPair(address2, 510000) // enough for value and fee
-        wallet.processTx([{tx: pair2.tx, confirmations: 1}, {tx: pair2.prevTx}])
         unspentTxs.push(pair2.tx)
 
         var pair3 = createTxPair(address2, 520000) // enough for value and fee
-        wallet.processTx([{tx: pair3.tx, confirmations: 0}, {tx: pair3.prevTx}])
         unspentTxs.push(pair3.tx)
+
+        wallet.processTx([
+          {tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx},
+          {tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx},
+          {tx: pair2.tx, confirmations: 1}, {tx: pair2.prevTx},
+          {tx: pair3.tx, confirmations: 0}, {tx: pair3.prevTx}
+        ])
 
         function createTxPair(address, amount) {
           var prevTx = new Transaction()

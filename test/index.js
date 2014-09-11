@@ -155,12 +155,56 @@ describe('Common Blockchain Wallet', function() {
       })
 
       describe('address derivation', function() {
+        var tmpWalletSnapshot
+        before(function() {
+          tmpWalletSnapshot = tmpWallet.serialize()
+        })
+
+        after(function() {
+          tmpWallet = Wallet.deserialize(tmpWalletSnapshot)
+        })
+
         it('adds the next change address to changeAddresses if the it is used to receive funds', function() {
           assert.equal(tmpWallet.changeAddresses.indexOf(nextChangeAddress), tmpWallet.changeAddresses.length - 1)
         })
 
         it('adds the next address to addresses if the it is used to receive funds', function() {
           assert.equal(tmpWallet.addresses.indexOf(nextAddress), tmpWallet.addresses.length - 1)
+        })
+
+        it('does not add the same address more than once', function() {
+          var nextNextAddress = tmpWallet.getNextAddress()
+
+          var aTx = new Transaction()
+          aTx.addInput(new Transaction(), 1)
+          aTx.addOutput(nextNextAddress, 200000)
+
+          var bTx = new Transaction()
+          bTx.addInput(new Transaction(), 2)
+          bTx.addOutput(nextNextAddress, 200000)
+
+          tmpWallet.processTx([{tx: aTx}, {tx: bTx}])
+
+          assert.equal(tmpWallet.addresses.indexOf(nextNextAddress), tmpWallet.addresses.length - 1)
+        })
+
+        it('loops back to check on addresses again if a next address is found used', function() {
+          tmpWallet = Wallet.deserialize(tmpWalletSnapshot)
+          var nextNextAddress = 'miDXKzykJqDT5d1NkKB89vSaiSHGWd2iMF'
+          var nextNextNextAddress = 'mrv2ioDxV6GVEs87jPGcaigm9qhbDfetcw'
+
+          var aTx = new Transaction()
+          aTx.addInput(new Transaction(), 1)
+          aTx.addOutput(nextNextAddress, 200000)
+
+          var bTx = new Transaction()
+          bTx.addInput(new Transaction(), 2)
+          bTx.addOutput(nextNextNextAddress, 200000)
+
+          tmpWallet.processTx([{tx: bTx}, {tx: aTx}])
+
+          assert.equal(tmpWallet.addresses.indexOf(nextNextAddress), tmpWallet.addresses.length - 2)
+          assert.equal(tmpWallet.addresses.indexOf(nextNextNextAddress), tmpWallet.addresses.length - 1)
         })
       })
 

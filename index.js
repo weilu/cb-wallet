@@ -79,8 +79,11 @@ Wallet.prototype.processTx = function(txs) {
     txs = [{tx: txs}]
   }
 
-  var nextChangeAddress = this.getNextChangeAddress()
-  var nextAddress = this.getNextAddress()
+  var foundUsed = true
+  while(foundUsed) {
+    foundUsed = addToAddresses.bind(this)(this.getNextAddress(), this.getNextChangeAddress())
+  }
+
   txs.forEach(function(obj) {
     var tx = obj.tx
     this.txGraph.addTx(tx)
@@ -90,21 +93,30 @@ Wallet.prototype.processTx = function(txs) {
     if(obj.confirmations != null) {
       this.txMetadata[id].confirmations = obj.confirmations
     }
-
-    tx.outs.forEach(function(out){
-      var address = bitcoin.Address.fromOutputScript(out.script, bitcoin.networks[this.networkName]).toString()
-      if(nextChangeAddress === address) {
-        this.changeAddresses.push(nextChangeAddress)
-      } else if(nextAddress === address) {
-        this.addresses.push(nextAddress)
-      }
-    }, this)
   }, this)
 
   //FIXME: make me more effecient
   var myAddresses = this.addresses.concat(this.changeAddresses)
   var feesAndValues = this.txGraph.calculateFeesAndValues(myAddresses, bitcoin.networks[this.networkName])
   this.txMetadata = mergeMetadata(feesAndValues, this.txMetadata)
+
+  function addToAddresses(nextAddress, nextChangeAddress) {
+    for(var i=0; i<txs.length; i++) {
+      var tx = txs[i].tx
+      var found = tx.outs.some(function(out){
+        var address = bitcoin.Address.fromOutputScript(out.script, bitcoin.networks[this.networkName]).toString()
+        if(nextChangeAddress === address) {
+          this.changeAddresses.push(address)
+          return true
+        } else if(nextAddress === address) {
+          this.addresses.push(address)
+          return true
+        }
+      }, this)
+
+      if(found) return true
+    }
+  }
 }
 
 Wallet.prototype.createTx = function(to, value, fee, minConf) {

@@ -79,14 +79,24 @@ Wallet.prototype.processTx = function(txs) {
     txs = [{tx: txs}]
   }
 
+  var lastChangeAddress = this.changeAddresses[this.changeAddresses.length - 1]
   txs.forEach(function(obj) {
-    this.txGraph.addTx(obj.tx)
+    var tx = obj.tx
+    this.txGraph.addTx(tx)
 
-    var id = obj.tx.getId()
+    var id = tx.getId()
     this.txMetadata[id] = this.txMetadata[id] || { confirmations: null }
     if(obj.confirmations != null) {
       this.txMetadata[id].confirmations = obj.confirmations
     }
+
+    tx.outs.some(function(out){
+      var address = bitcoin.Address.fromOutputScript(out.script, bitcoin.networks[this.networkName]).toString()
+      if(lastChangeAddress === address) {
+        this.changeAddresses.push(this.getNextChangeAddress())
+        return true
+      }
+    }, this)
   }, this)
 
   //FIXME: make me more effecient

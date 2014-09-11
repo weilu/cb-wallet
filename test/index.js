@@ -135,7 +135,8 @@ describe('Common Blockchain Wallet', function() {
         tx = new Transaction()
         tx.addInput(prevTx, 0)
         tx.addOutput(externalAddress, 50000)
-        tx.addOutput(address, 130000)
+        var changeAddresses = tmpWallet.changeAddresses
+        tx.addOutput(changeAddresses[changeAddresses.length - 1], 130000)
       })
 
       it('adds the tx and prevTx to graph', function() {
@@ -151,6 +152,13 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(metadata.confirmations, 3)
         assert.equal(metadata.value, -50000)
         assert.equal(metadata.fee, 20000)
+      })
+
+      it('derives a new change address if the last change address is used to receive funds', function() {
+        var oldLength = tmpWallet.changeAddresses.length
+        tmpWallet.processTx([{tx: tx}, {tx: prevTx}])
+
+        assert.equal(tmpWallet.changeAddresses.length, oldLength + 1)
       })
 
       describe('when a single tx is passed in', function() {

@@ -252,6 +252,7 @@ Wallet.deserialize = function(json) {
   wallet.addresses = deriveAddresses(wallet.externalAccount, deserialized.addressIndex)
   wallet.changeAddresses = deriveAddresses(wallet.internalAccount, deserialized.changeAddressIndex)
   wallet.networkName = deserialized.networkName
+  wallet.api = new API(deserialized.networkName)
   wallet.txMetadata = deserialized.txMetadata
 
   wallet.txGraph = new TxGraph()

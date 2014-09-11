@@ -72,6 +72,7 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(parsed.addressIndex, wallet.addressIndex)
         assert.equal(parsed.changeAddressIndex, wallet.changeAddressIndex)
         assert.equal(parsed.networkName, wallet.networkName)
+        assert.deepEqual(parsed.api, wallet.api)
         assert.deepEqual(parsed.txMetadata, wallet.txMetadata)
       })
     })

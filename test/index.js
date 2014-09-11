@@ -121,11 +121,12 @@ describe('Common Blockchain Wallet', function() {
     })
 
     describe('processTx', function() {
-      var prevTx, tx, externalAddress, tmpWallet
+      var prevTx, tx, externalAddress, tmpWallet, lastChangeAddress
 
-      beforeEach(function() {
+      before(function() {
         externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
         tmpWallet = Wallet.deserialize(JSON.stringify(fixtures))
+        lastChangeAddress = tmpWallet.changeAddresses[tmpWallet.changeAddresses.length - 1]
         var address = tmpWallet.addresses[0]
 
         prevTx = new Transaction()
@@ -135,19 +136,18 @@ describe('Common Blockchain Wallet', function() {
         tx = new Transaction()
         tx.addInput(prevTx, 0)
         tx.addOutput(externalAddress, 50000)
-        var changeAddresses = tmpWallet.changeAddresses
-        tx.addOutput(changeAddresses[changeAddresses.length - 1], 130000)
+        tx.addOutput(lastChangeAddress, 130000)
+
+        tmpWallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
       })
 
       it('adds the tx and prevTx to graph', function() {
-        tmpWallet.processTx([{tx: tx}, {tx: prevTx}])
         var graph = tmpWallet.txGraph
         assert.deepEqual(graph.findNodeById(tx.getId()).tx, tx)
         assert.deepEqual(graph.findNodeById(prevTx.getId()).tx, prevTx)
       })
 
       it('attaches the txConf and calculate fees & values for tx', function() {
-        tmpWallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
         var metadata = tmpWallet.txMetadata[tx.getId()]
         assert.equal(metadata.confirmations, 3)
         assert.equal(metadata.value, -50000)
@@ -155,16 +155,11 @@ describe('Common Blockchain Wallet', function() {
       })
 
       it('derives a new change address if the last change address is used to receive funds', function() {
-        var oldLength = tmpWallet.changeAddresses.length
-        tmpWallet.processTx([{tx: tx}, {tx: prevTx}])
-
-        assert.equal(tmpWallet.changeAddresses.length, oldLength + 1)
+        assert.equal(tmpWallet.changeAddresses.indexOf(lastChangeAddress), tmpWallet.changeAddresses.length - 2)
       })
 
       describe('when a single tx is passed in', function() {
         it('works', function() {
-          tmpWallet.processTx([{tx: tx}, {tx: prevTx}])
-
           var outgoingTx = new Transaction()
           outgoingTx.addInput(tx, 1)
           outgoingTx.addOutput(externalAddress, 120000)

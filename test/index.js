@@ -121,22 +121,22 @@ describe('Common Blockchain Wallet', function() {
     })
 
     describe('processTx', function() {
-      var prevTx, tx, externalAddress, tmpWallet, lastChangeAddress
+      var prevTx, tx, externalAddress, tmpWallet, nextAddress, nextChangeAddress
 
       before(function() {
         externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
         tmpWallet = Wallet.deserialize(JSON.stringify(fixtures))
-        lastChangeAddress = tmpWallet.changeAddresses[tmpWallet.changeAddresses.length - 1]
-        var address = tmpWallet.addresses[0]
+        nextAddress = tmpWallet.getNextAddress()
+        nextChangeAddress = tmpWallet.getNextChangeAddress()
 
         prevTx = new Transaction()
         prevTx.addInput(new Transaction(), 0)
-        prevTx.addOutput(address, 200000)
+        prevTx.addOutput(nextAddress, 200000)
 
         tx = new Transaction()
         tx.addInput(prevTx, 0)
         tx.addOutput(externalAddress, 50000)
-        tx.addOutput(lastChangeAddress, 130000)
+        tx.addOutput(nextChangeAddress, 130000)
 
         tmpWallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
       })
@@ -154,8 +154,14 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(metadata.fee, 20000)
       })
 
-      it('derives a new change address if the last change address is used to receive funds', function() {
-        assert.equal(tmpWallet.changeAddresses.indexOf(lastChangeAddress), tmpWallet.changeAddresses.length - 2)
+      describe('address derivation', function() {
+        it('adds the next change address to changeAddresses if the it is used to receive funds', function() {
+          assert.equal(tmpWallet.changeAddresses.indexOf(nextChangeAddress), tmpWallet.changeAddresses.length - 1)
+        })
+
+        it('adds the next address to addresses if the it is used to receive funds', function() {
+          assert.equal(tmpWallet.addresses.indexOf(nextAddress), tmpWallet.addresses.length - 1)
+        })
       })
 
       describe('when a single tx is passed in', function() {

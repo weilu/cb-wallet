@@ -79,7 +79,8 @@ Wallet.prototype.processTx = function(txs) {
     txs = [{tx: txs}]
   }
 
-  var lastChangeAddress = this.changeAddresses[this.changeAddresses.length - 1]
+  var nextChangeAddress = this.getNextChangeAddress()
+  var nextAddress = this.getNextAddress()
   txs.forEach(function(obj) {
     var tx = obj.tx
     this.txGraph.addTx(tx)
@@ -90,11 +91,12 @@ Wallet.prototype.processTx = function(txs) {
       this.txMetadata[id].confirmations = obj.confirmations
     }
 
-    tx.outs.some(function(out){
+    tx.outs.forEach(function(out){
       var address = bitcoin.Address.fromOutputScript(out.script, bitcoin.networks[this.networkName]).toString()
-      if(lastChangeAddress === address) {
-        this.changeAddresses.push(this.getNextChangeAddress())
-        return true
+      if(nextChangeAddress === address) {
+        this.changeAddresses.push(nextChangeAddress)
+      } else if(nextAddress === address) {
+        this.addresses.push(nextAddress)
       }
     }, this)
   }, this)

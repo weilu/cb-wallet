@@ -168,6 +168,16 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
   return tx
 }
 
+Wallet.prototype.sendTx = function(tx, done) {
+  var that = this
+  this.api.transactions.propagate(tx.toHex(), function(err){
+    if(err) return done(err);
+
+    that.processTx(tx)
+    done()
+  })
+}
+
 function getCandidateOutputs(headNodes, metadata, network, myAddresses, minConf) {
   var unspentNodes = headNodes.filter(function(n) {
     var tx = metadata[n.id]

@@ -422,5 +422,49 @@ describe('Common Blockchain Wallet', function() {
         })
       })
     })
+
+    describe('sendTx', function() {
+
+      var tx = new Transaction()
+
+      beforeEach(function(){
+        sinon.stub(Wallet.prototype, "processTx")
+      })
+
+      it('propagates the transaction through the API', function(done) {
+        sinon.stub(wallet.api.transactions, "propagate").callsArg(1)
+
+        wallet.sendTx(tx, function(err) {
+          assert.ifError(err)
+          assert(wallet.api.transactions.propagate.calledWith(tx.toHex()))
+          done()
+        })
+      })
+
+      it('processes the transaction on success', function(done) {
+        sinon.stub(wallet.api.transactions, "propagate").callsArg(1)
+
+        wallet.sendTx(tx, function(err) {
+          assert.ifError(err)
+          assert(Wallet.prototype.processTx.calledWith(tx))
+          done()
+        })
+      })
+
+      it('invokes callback with error on error', function(done) {
+        var error = new Error('oops')
+        sinon.stub(wallet.api.transactions, "propagate").callsArgWith(1, error)
+
+        wallet.sendTx(tx, function(err) {
+          assert.equal(err, error)
+          done()
+        })
+      })
+
+      afterEach(function(){
+        wallet.api.transactions.propagate.restore()
+        Wallet.prototype.processTx.restore()
+      })
+    })
   })
 })

@@ -428,6 +428,38 @@ describe('Common Blockchain Wallet', function() {
         })
       })
 
+      describe('destination address validation', function(){
+        var value = 1000
+
+        it('catches invalid address', function(){
+          var to = '123'
+          assert.throws(function() {
+            wallet.createTx(to, value)
+          }, /Invalid checksum/)
+        })
+
+        it('catches address with the wrong version', function(){
+          var to = 'LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B'
+          assert.throws(function() {
+            wallet.createTx(to, value)
+          }, /Invalid address version/)
+        })
+
+        it('allows valid pubKeyHash address', function(){
+          var to = 'mmGUSgaP7E8ig34MG2w1HzVjgwbqJoRQQu'
+          assert.doesNotThrow(function() {
+            wallet.createTx(to, value)
+          })
+        })
+
+        it('allows valid p2sh address', function(){
+          var to = '2MvR3wixpB1usCNRugN6ufwxfT4GEFxoRhQ'
+          assert.doesNotThrow(function() {
+            wallet.createTx(to, value)
+          })
+        })
+      })
+
       describe('when value is below dust threshold', function(){
         it('throws an error', function(){
           var value = 546

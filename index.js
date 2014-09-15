@@ -137,6 +137,10 @@ Wallet.prototype.processTx = function(txs) {
 
 Wallet.prototype.createTx = function(to, value, fee, minConf) {
   var network = bitcoin.networks[this.networkName]
+
+  var address = bitcoin.Address.fromBase58Check(to)
+  assert(address.version === network.pubKeyHash || address.version === network.scriptHash, 'Invalid address version')
+
   assert(value > network.dustThreshold, value + ' must be above dust threshold (' + network.dustThreshold + ' Satoshis)')
 
   var myAddresses = this.addresses.concat(this.changeAddresses)

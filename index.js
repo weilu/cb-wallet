@@ -176,7 +176,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
     }
   })
 
-  validate.postCreateTx(subTotal, accum)
+  validate.postCreateTx(accum, subTotal)
 
   addresses.forEach(function(address, i) {
     tx.sign(i, that.getPrivateKeyForAddress(address))

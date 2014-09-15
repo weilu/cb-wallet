@@ -7,7 +7,7 @@ function preCreateTx(to, value, network) {
   assert(value > network.dustThreshold, value + ' must be above dust threshold (' + network.dustThreshold + ' Satoshis)')
 }
 
-function postCreateTx(needed, has) {
+function postCreateTx(has, needed) {
   assert(has >= needed, 'Not enough funds (incl. fee): ' + has + ' < ' + needed)
 }
 

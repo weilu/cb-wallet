@@ -47,7 +47,7 @@ describe('validator', function(){
     describe('when there is not enough money', function(){
       it('throws an error', function(){
         assert.throws(function() {
-          validate.postCreateTx(1410001, 1410000)
+          validate.postCreateTx(1410000, 1410001)
         }, /Not enough funds \(incl. fee\): 1410000 < 1410001/)
       })
     })

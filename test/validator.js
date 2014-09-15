@@ -10,41 +10,34 @@ describe('validator', function(){
       var value = 1000
 
       it('catches invalid address', function(){
-        var to = '123'
         assert.throws(function() {
-          validate.preCreateTx(to, value, network)
+          validate.preCreateTx('123', value, network)
         }, /Invalid checksum/)
       })
 
       it('catches address with the wrong version', function(){
-        var to = 'LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B'
         assert.throws(function() {
-          validate.preCreateTx(to, value, network)
+          validate.preCreateTx('LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B', value, network)
         }, /Invalid address version/)
       })
 
       it('allows valid pubKeyHash address', function(){
-        var to = 'mmGUSgaP7E8ig34MG2w1HzVjgwbqJoRQQu'
         assert.doesNotThrow(function() {
-          validate.preCreateTx(to, value, network)
+          validate.preCreateTx('mmGUSgaP7E8ig34MG2w1HzVjgwbqJoRQQu', value, network)
         })
       })
 
       it('allows valid p2sh address', function(){
-        var to = '2MvR3wixpB1usCNRugN6ufwxfT4GEFxoRhQ'
         assert.doesNotThrow(function() {
-          validate.preCreateTx(to, value, network)
+          validate.preCreateTx('2MvR3wixpB1usCNRugN6ufwxfT4GEFxoRhQ', value, network)
         })
       })
     })
 
     describe('when value is below dust threshold', function(){
       it('throws an error', function(){
-        var value = 546
-        var to = 'mmGUSgaP7E8ig34MG2w1HzVjgwbqJoRQQu'
-
         assert.throws(function() {
-          validate.preCreateTx(to, value, network)
+          validate.preCreateTx('mmGUSgaP7E8ig34MG2w1HzVjgwbqJoRQQu', 546, network)
         }, /546 must be above dust threshold \(546 Satoshis\)/)
       })
     })

@@ -23,7 +23,12 @@ function preCreateTx(to, value, network) {
 }
 
 function postCreateTx(has, needed) {
-  assert(has >= needed, 'Not enough funds (incl. fee): ' + has + ' < ' + needed)
+  if(has < needed) {
+    var error = new Error('Insufficient funds')
+    error.has = has
+    error.needed = needed
+    throw error
+  }
 }
 
 module.exports = {

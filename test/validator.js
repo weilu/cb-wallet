@@ -61,7 +61,12 @@ describe('validator', function(){
       it('throws an error', function(){
         assert.throws(function() {
           validate.postCreateTx(1410000, 1410001)
-        }, /Not enough funds \(incl. fee\): 1410000 < 1410001/)
+        }, function(e) {
+          assert.equal(e.message, "Insufficient funds")
+          assert.equal(e.has, 1410000)
+          assert.equal(e.needed, 1410001)
+          return true
+        })
       })
     })
   })

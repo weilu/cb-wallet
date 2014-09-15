@@ -11,8 +11,20 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
   if(arguments.length === 0) return this;
 
   try {
-    this.externalAccount = bitcoin.HDNode.fromBase58(externalAccount)
-    this.internalAccount = bitcoin.HDNode.fromBase58(internalAccount)
+    if(typeof externalAccount === 'string') {
+      this.externalAccount = bitcoin.HDNode.fromBase58(externalAccount)
+    } else {
+      this.externalAccount = externalAccount
+    }
+
+    if(typeof internalAccount === 'string') {
+      this.internalAccount = bitcoin.HDNode.fromBase58(internalAccount)
+    } else {
+      this.internalAccount = internalAccount
+    }
+
+    assert(this.externalAccount != null, 'externalAccount cannot be null')
+    assert(this.internalAccount != null, 'internalAccount cannot be null')
   } catch(e) {
     return done(e)
   }

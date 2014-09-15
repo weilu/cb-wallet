@@ -3,6 +3,7 @@ var sinon = require('sinon')
 var TxGraph = require('bitcoin-tx-graph')
 var bitcoin = require('bitcoinjs-lib')
 var Transaction = bitcoin.Transaction
+var HDNode = bitcoin.HDNode
 var Address = bitcoin.Address
 var testnet = bitcoin.networks.testnet
 var fixtures = require('./wallet')
@@ -28,13 +29,20 @@ describe('Common Blockchain Wallet', function() {
         })
       })
 
+      it('accepts externalAccount and internalAccount as objects', function() {
+        new Wallet(HDNode.fromBase58(fixtures.externalAccount), HDNode.fromBase58(fixtures.internalAccount), 'testnet', function(err, w) {
+          assert.equal(w.externalAccount.toBase58(), fixtures.externalAccount)
+          assert.equal(w.internalAccount.toBase58(), fixtures.internalAccount)
+        })
+      })
+
       describe('wallet properties', function() {
         it('initializes a txGraph', function() {
           assert(wallet.txGraph)
           assert.equal(wallet.txGraph.heads.length, 1)
         })
 
-        it('assigns externalAccount and internalAccount ', function() {
+        it('assigns externalAccount and internalAccount', function() {
           assert.equal(wallet.externalAccount.toBase58(), fixtures.externalAccount)
           assert.equal(wallet.internalAccount.toBase58(), fixtures.internalAccount)
         })

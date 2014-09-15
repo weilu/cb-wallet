@@ -6,6 +6,7 @@ var TxGraph = require('bitcoin-tx-graph')
 var assert = require('assert')
 var discoverAddresses = require('./network').discoverAddresses
 var fetchTransactions = require('./network').fetchTransactions
+var validate = require('./validator')
 
 function Wallet(externalAccount, internalAccount, networkName, done) {
   if(arguments.length === 0) return this;
@@ -137,11 +138,7 @@ Wallet.prototype.processTx = function(txs) {
 
 Wallet.prototype.createTx = function(to, value, fee, minConf) {
   var network = bitcoin.networks[this.networkName]
-
-  var address = bitcoin.Address.fromBase58Check(to)
-  assert(address.version === network.pubKeyHash || address.version === network.scriptHash, 'Invalid address version')
-
-  assert(value > network.dustThreshold, value + ' must be above dust threshold (' + network.dustThreshold + ' Satoshis)')
+  validate.preCreateTx(to, value, network)
 
   var myAddresses = this.addresses.concat(this.changeAddresses)
   if(minConf == null) minConf = 1
@@ -179,7 +176,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
     }
   })
 
-  assert(accum >= subTotal, 'Not enough funds (incl. fee): ' + accum + ' < ' + subTotal)
+  validate.postCreateTx(subTotal, accum)
 
   addresses.forEach(function(address, i) {
     tx.sign(i, that.getPrivateKeyForAddress(address))

@@ -96,6 +96,24 @@ describe('Common Blockchain Wallet', function() {
       it('works', function() {
         assert.equal(wallet.getBalance(), 0)
       })
+
+      it('returns balance from txs with confirmations no less than specified minConf', function() {
+        var externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
+        var tmpWallet = Wallet.deserialize(JSON.stringify(fixtures))
+
+        var prevTx = new Transaction()
+        prevTx.addInput(new Transaction(), 0)
+        prevTx.addOutput(externalAddress, 200000)
+
+        var tx = new Transaction()
+        tx.addInput(prevTx, 0)
+        tx.addOutput(tmpWallet.addresses[0], 200000)
+
+        tmpWallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
+
+        assert.equal(tmpWallet.getBalance(10342), 0)
+        assert.equal(tmpWallet.getBalance(3), 200000)
+      })
     })
 
     describe('getNextAddress', function() {

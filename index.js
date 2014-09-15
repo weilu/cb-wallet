@@ -55,9 +55,13 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
   })
 }
 
-Wallet.prototype.getBalance = function() {
+Wallet.prototype.getBalance = function(minConf) {
   var metadata = this.txMetadata
-  return this.txGraph.heads.reduce(function(balance, node) {
+  minConf = minConf || 0
+
+  return this.txGraph.heads.filter(function(node) {
+    return metadata[node.id].confirmations >= minConf
+  }).reduce(function(balance, node) {
     var value = metadata[node.id].value
     if(value == null || value <= 0) return balance;
 

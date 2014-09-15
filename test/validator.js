@@ -60,11 +60,22 @@ describe('validator', function(){
     describe('when there is not enough money', function(){
       it('throws an error', function(){
         assert.throws(function() {
-          validate.postCreateTx(1410000, 1410001)
+          validate.postCreateTx(1410001, 1410000, 1410000)
         }, function(e) {
           assert.equal(e.message, "Insufficient funds")
+          assert.equal(e.details, null)
           assert.equal(e.has, 1410000)
           assert.equal(e.needed, 1410001)
+          return true
+        })
+      })
+
+      it('when the total balance including zero conf is enough to meet the amount, it populates the error details field', function(){
+        assert.throws(function() {
+          validate.postCreateTx(1410001, 1410000, 1410001)
+        }, function(e) {
+          assert.equal(e.message, "Insufficient funds")
+          assert.equal(e.details, "Additional funds confirmation pending")
           return true
         })
       })

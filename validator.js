@@ -22,11 +22,15 @@ function preCreateTx(to, value, network) {
   }
 }
 
-function postCreateTx(has, needed) {
+function postCreateTx(needed, has, hasIncludingZeroConf) {
   if(has < needed) {
     var error = new Error('Insufficient funds')
     error.has = has
     error.needed = needed
+
+    if(hasIncludingZeroConf >= needed) {
+      error.details = 'Additional funds confirmation pending'
+    }
     throw error
   }
 }

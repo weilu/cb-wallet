@@ -1,12 +1,12 @@
 {
   "name": "cb-wallet",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "",
   "main": "index.js",
   "dependencies": {
     "async": "^0.9.0",
     "bip32-utils": "0.0.1",
-    "bitcoin-tx-graph": "^3.0.0",
+    "bitcoin-tx-graph": "^4.0.0",
     "bitcoinjs-lib": "^1.0.2",
     "cb-blockr": "^1.1.0"
   },

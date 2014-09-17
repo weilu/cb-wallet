@@ -26,11 +26,9 @@ function discoverUsedAddresses(account, api, done) {
     api.addresses.get(addresses, function(err, results) {
       if (err) return callback(err);
 
-      var areSpent = results.map(function(result) {
-        return result.totalReceived > 0
-      })
-
-      callback(undefined, areSpent)
+      callback(undefined, results.map(function(result) {
+        return result.txCount > 0
+      }))
     })
   }, function(err, k) {
     if (err) return done(err);

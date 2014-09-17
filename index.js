@@ -57,16 +57,14 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
 }
 
 Wallet.prototype.getBalance = function(minConf) {
-  var metadata = this.txMetadata
   minConf = minConf || 0
 
-  return this.txGraph.heads.filter(function(node) {
-    return metadata[node.id].confirmations >= minConf
-  }).reduce(function(balance, node) {
-    var value = metadata[node.id].value
-    if(value == null || value <= 0) return balance;
+  var network = bitcoin.networks[this.networkName]
+  var myAddresses = this.addresses.concat(this.changeAddresses)
+  var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses, minConf)
 
-    return balance + value
+  return utxos.reduce(function(balance, unspent) {
+    return balance + unspent.value
   }, 0)
 }
 
@@ -143,6 +141,9 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
   var myAddresses = this.addresses.concat(this.changeAddresses)
   if(minConf == null) minConf = 1
   var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses, minConf)
+  utxos = utxos.sort(function(o1, o2){
+    return o2.value - o1.value
+  })
 
   var accum = 0
   var subTotal = value
@@ -197,11 +198,10 @@ Wallet.prototype.sendTx = function(tx, done) {
 
 function getCandidateOutputs(headNodes, metadata, network, myAddresses, minConf) {
   var unspentNodes = headNodes.filter(function(n) {
-    var tx = metadata[n.id]
-    return tx.value > 0 && tx.confirmations >= minConf
+    return metadata[n.id].confirmations >= minConf
   })
 
-  var unspentOutputs = unspentNodes.reduce(function(unspentOutputs, node) {
+  return unspentNodes.reduce(function(unspentOutputs, node) {
     node.tx.outs.forEach(function(out, i) {
       var address = bitcoin.Address.fromOutputScript(out.script, network).toString()
       if(myAddresses.indexOf(address) >= 0) {
@@ -216,11 +216,6 @@ function getCandidateOutputs(headNodes, metadata, network, myAddresses, minConf)
 
     return unspentOutputs
   }, [])
-
-
-  return unspentOutputs.sort(function(o1, o2){
-    return o2.value - o1.value
-  })
 }
 
 function estimateFeePadChangeOutput(tx, network) {

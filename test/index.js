@@ -97,23 +97,42 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(wallet.getBalance(), 0)
       })
 
-      it('returns balance from txs with confirmations no less than specified minConf', function() {
-        var externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
+      it('calculates it correctly when one of the head transactions has value 0', function() {
         var tmpWallet = Wallet.deserialize(JSON.stringify(fixtures))
-
-        var prevTx = new Transaction()
-        prevTx.addInput(new Transaction(), 0)
-        prevTx.addOutput(externalAddress, 200000)
+        var fundingTx = fundAddressZero(tmpWallet, 200000)
 
         var tx = new Transaction()
-        tx.addInput(prevTx, 0)
-        tx.addOutput(tmpWallet.addresses[0], 200000)
+        tx.addInput(fundingTx, 0)
+        tx.addOutput(tmpWallet.changeAddresses[0], 200000)
 
-        tmpWallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
+        tmpWallet.processTx(tx)
+
+        assert.equal(tmpWallet.getBalance(), 200000)
+      })
+
+      it('returns balance from txs with confirmations no less than specified minConf', function() {
+        var tmpWallet = Wallet.deserialize(JSON.stringify(fixtures))
+        fundAddressZero(tmpWallet, 200000)
 
         assert.equal(tmpWallet.getBalance(10342), 0)
         assert.equal(tmpWallet.getBalance(3), 200000)
       })
+
+      function fundAddressZero(wallet, amount) {
+        var externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
+
+        var prevTx = new Transaction()
+        prevTx.addInput(new Transaction(), 0)
+        prevTx.addOutput(externalAddress, amount)
+
+        var tx = new Transaction()
+        tx.addInput(prevTx, 0)
+        tx.addOutput(wallet.addresses[0], amount)
+
+        wallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
+
+        return tx
+      }
     })
 
     describe('getNextAddress', function() {

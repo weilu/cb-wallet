@@ -1,6 +1,6 @@
 {
   "name": "cb-wallet",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "",
   "main": "index.js",
   "dependencies": {
@@ -8,7 +8,7 @@
     "bip32-utils": "0.0.1",
     "bitcoin-tx-graph": "^4.0.0",
     "bitcoinjs-lib": "^1.0.2",
-    "cb-blockr": "^1.1.0"
+    "cb-blockr": "^1.1.1"
   },
   "devDependencies": {
     "mocha": "^1.21.4",

@@ -185,7 +185,7 @@ describe('Common Blockchain Wallet', function() {
         tx.addOutput(externalAddress, 50000)
         tx.addOutput(nextChangeAddress, 130000)
 
-        tmpWallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
+        tmpWallet.processTx([{tx: tx, confirmations: 3, timestamp: 1411008787}, {tx: prevTx}])
       })
 
       it('adds the tx and prevTx to graph', function() {
@@ -194,8 +194,9 @@ describe('Common Blockchain Wallet', function() {
         assert.deepEqual(graph.findNodeById(prevTx.getId()).tx, prevTx)
       })
 
-      it('attaches the txConf and calculate fees & values for tx', function() {
+      it('attaches the timestamp, confirmations and calculate fees & values for tx', function() {
         var metadata = tmpWallet.txMetadata[tx.getId()]
+        assert.equal(metadata.timestamp, 1411008787)
         assert.equal(metadata.confirmations, 3)
         assert.equal(metadata.value, -50000)
         assert.equal(metadata.fee, 20000)
@@ -267,6 +268,7 @@ describe('Common Blockchain Wallet', function() {
           assert.deepEqual(graph.findNodeById(outgoingTx.getId()).tx, outgoingTx)
           var metadata = tmpWallet.txMetadata[outgoingTx.getId()]
           assert.equal(metadata.confirmations, undefined)
+          assert.equal(metadata.timestamp, undefined)
           assert.equal(metadata.value, -120000)
           assert.equal(metadata.fee, 10000)
         })

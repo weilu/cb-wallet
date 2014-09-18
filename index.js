@@ -88,7 +88,7 @@ Wallet.prototype.getPrivateKeyForAddress = function(address) {
 }
 
 // param: `txObj` or
-// `[{tx: txObj1, confirmations: n1}, {tx: txObj2, confirmations: n2}]`
+// `[{tx: txObj1, confirmations: n1, timestamp: t1}, {tx: txObj2, confirmations: n2, timestamp: t2}]`
 Wallet.prototype.processTx = function(txs) {
   if(!Array.isArray(txs)) {
     txs = [{tx: txs}]
@@ -107,6 +107,9 @@ Wallet.prototype.processTx = function(txs) {
     this.txMetadata[id] = this.txMetadata[id] || { confirmations: null }
     if(obj.confirmations != null) {
       this.txMetadata[id].confirmations = obj.confirmations
+    }
+    if(obj.timestamp != null) {
+      this.txMetadata[id].timestamp = obj.timestamp
     }
   }, this)
 

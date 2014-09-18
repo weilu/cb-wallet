@@ -43,37 +43,29 @@ function fetchTransactions(api, addresses, done) {
   api.addresses.transactions(addresses, null, function(err, transactions) {
     if(err) return done(err);
 
-    var txsAndConfs = parseTransactions(transactions)
+    var parsed = parseTransactions(transactions)
 
-    api.transactions.get(getAdditionalTxIds(txsAndConfs.txs), function(err, transactions) {
+    api.transactions.get(getAdditionalTxIds(parsed.txs), function(err, transactions) {
       if(err) return done(err);
 
-      var additionalTxsAndConfs = parseTransactions(transactions)
-
-      var txs = txsAndConfs.txs.concat(additionalTxsAndConfs.txs)
-      var confirmations = txsAndConfs.confirmations.concat(additionalTxsAndConfs.confirmations)
-
-      if(txs.length !== confirmations.length) {
-        return done(new Error("expect confirmations fetched for every transaction"))
-      }
-
-      var metadata = txs.reduce(function(memo, tx, i) {
-        memo[tx.getId()] = { confirmations: confirmations[i] }
-        return memo
-      }, {})
-
-      done(null, txs, metadata)
+      parsed = parseTransactions(transactions, parsed)
+      done(null, parsed.txs, parsed.metadata)
     })
   })
 }
 
-function parseTransactions(transactions) {
+function parseTransactions(transactions, initialValue) {
+  initialValue = initialValue || {txs: [], metadata: {}}
   return transactions.reduce(function(memo, t) {
-    memo.txs.push(bitcoin.Transaction.fromHex(t.hex))
-    memo.confirmations.push(t.confirmations)
+    var tx = bitcoin.Transaction.fromHex(t.hex)
+    memo.txs.push(tx)
+    memo.metadata[tx.getId()] = {
+      confirmations: t.confirmations,
+      timestamp: t.timestamp
+    }
 
     return memo
-  }, {txs: [], confirmations: []})
+  }, initialValue)
 }
 
 function getAdditionalTxIds(txs) {

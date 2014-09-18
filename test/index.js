@@ -64,6 +64,7 @@ describe('Common Blockchain Wallet', function() {
 
           for(var key in wallet.txMetadata) {
             assert.equal(typeof wallet.txMetadata[key].confirmations, 'number')
+            assert.equal(typeof wallet.txMetadata[key].timestamp, 'number')
           }
         })
       })

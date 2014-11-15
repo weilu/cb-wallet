@@ -3,6 +3,7 @@ var sinon = require('sinon')
 var TxGraph = require('bitcoin-tx-graph')
 var bitcoin = require('bitcoinjs-lib')
 var Transaction = bitcoin.Transaction
+var TransactionBuilder = bitcoin.TransactionBuilder
 var HDNode = bitcoin.HDNode
 var Address = bitcoin.Address
 var testnet = bitcoin.networks.testnet
@@ -436,17 +437,20 @@ describe('Common Blockchain Wallet', function() {
 
       describe('signing', function(){
         afterEach(function(){
-          Transaction.prototype.sign.restore()
+          TransactionBuilder.prototype.sign.restore()
+          TransactionBuilder.prototype.build.restore()
         })
 
         it('signes the inputs with respective keys', function(){
           var fee = 30000
-          sinon.stub(Transaction.prototype, "sign")
+          sinon.stub(TransactionBuilder.prototype, "sign")
+          sinon.stub(TransactionBuilder.prototype, "build")
 
           var tx = wallet.createTx(to, value, fee)
 
-          assert(Transaction.prototype.sign.calledWith(0, wallet.getPrivateKeyForAddress(address2)))
-          assert(Transaction.prototype.sign.calledWith(1, wallet.getPrivateKeyForAddress(address1)))
+          assert(TransactionBuilder.prototype.sign.calledWith(0, wallet.getPrivateKeyForAddress(address2)))
+          assert(TransactionBuilder.prototype.sign.calledWith(1, wallet.getPrivateKeyForAddress(address1)))
+          assert(TransactionBuilder.prototype.build.calledWith())
         })
       })
 

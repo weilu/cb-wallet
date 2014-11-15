@@ -152,17 +152,17 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
   var subTotal = value
   var addresses = []
 
-  var tx = new bitcoin.Transaction()
-  tx.addOutput(to, value)
+  var builder = new bitcoin.TransactionBuilder()
+  builder.addOutput(to, value)
 
   var that = this
   utxos.some(function(unspent) {
-    tx.addInput(unspent.id, unspent.index)
+    builder.addInput(unspent.id, unspent.index)
     addresses.push(unspent.address)
 
     var estimatedFee
     if(fee == undefined) {
-      estimatedFee = estimateFeePadChangeOutput(tx, network)
+      estimatedFee = estimateFeePadChangeOutput(builder.buildIncomplete(), network)
     } else {
       estimatedFee = fee
     }
@@ -173,7 +173,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
       var change = accum - subTotal
 
       if (change > network.dustThreshold) {
-        tx.addOutput(that.getNextChangeAddress(), change)
+        builder.addOutput(that.getNextChangeAddress(), change)
       }
 
       return true
@@ -183,10 +183,10 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
   validate.postCreateTx(subTotal, accum, this.getBalance(0))
 
   addresses.forEach(function(address, i) {
-    tx.sign(i, that.getPrivateKeyForAddress(address))
+    builder.sign(i, that.getPrivateKeyForAddress(address))
   })
 
-  return tx
+  return builder.build()
 }
 
 Wallet.prototype.sendTx = function(tx, done) {

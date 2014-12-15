@@ -21,21 +21,22 @@ function discoverUsedAddresses(account, api, done) {
 
   discover(account, 5, function(addresses, callback) {
 
-    usedAddresses = usedAddresses.concat(addresses)
-
     api.addresses.get(addresses, function(err, results) {
       if (err) return callback(err);
 
-      callback(undefined, results.map(function(result) {
-        return result.txCount > 0
+      callback(undefined, results.map(function(result, i) {
+        if (result.txCount > 0) {
+          usedAddresses.push(addresses[i])
+          return true
+        }
       }))
     })
   }, function(err, k) {
     if (err) return done(err);
 
     console.info('Discovered ' + k + ' addresses')
-
-    done(null, usedAddresses.slice(0, k))
+    
+    done(null, usedAddresses)
   })
 }
 

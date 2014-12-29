@@ -23,7 +23,7 @@ function discoverUsedAddresses(account, api, done) {
 
     usedAddresses = usedAddresses.concat(addresses)
 
-    api.addresses.get(addresses, function(err, results) {
+    api.addresses.summary(addresses, function(err, results) {
       if (err) return callback(err);
 
       callback(undefined, results.map(function(result) {
@@ -40,7 +40,7 @@ function discoverUsedAddresses(account, api, done) {
 }
 
 function fetchTransactions(api, addresses, done) {
-  api.addresses.transactions(addresses, null, function(err, transactions) {
+  api.addresses.transactions(addresses, function(err, transactions) {
     if(err) return done(err);
 
     var parsed = parseTransactions(transactions)
@@ -57,11 +57,11 @@ function fetchTransactions(api, addresses, done) {
 function parseTransactions(transactions, initialValue) {
   initialValue = initialValue || {txs: [], metadata: {}}
   return transactions.reduce(function(memo, t) {
-    var tx = bitcoin.Transaction.fromHex(t.hex)
+    var tx = bitcoin.Transaction.fromHex(t.txHex)
     memo.txs.push(tx)
     memo.metadata[tx.getId()] = {
-      confirmations: t.confirmations,
-      timestamp: t.timestamp
+      confirmations: t.__confirmations,
+      timestamp: t.__blockTimestamp
     }
 
     return memo

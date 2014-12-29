@@ -8,7 +8,7 @@
     "bip32-utils": "0.0.1",
     "bitcoin-tx-graph": "^4.0.3",
     "bitcoinjs-lib": "^1.2.0",
-    "cb-blockr": "^1.2.0"
+    "cb-blockr": "^3.0.0"
   },
   "devDependencies": {
     "mocha": "^1.21.4",

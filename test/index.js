@@ -8,6 +8,7 @@ var HDNode = bitcoin.HDNode
 var Address = bitcoin.Address
 var testnet = bitcoin.networks.testnet
 var fixtures = require('./wallet')
+var balanceFixtures = require('./balance')
 var history = require('./history')
 var addresses = require('./addresses').addresses
 var changeAddresses = require('./addresses').changeAddresses
@@ -118,6 +119,11 @@ describe('Common Blockchain Wallet', function() {
 
         assert.equal(tmpWallet.getBalance(10342), 0)
         assert.equal(tmpWallet.getBalance(3), 200000)
+      })
+
+      it('does not miss pending unspents', function() {
+        wallet = Wallet.deserialize(JSON.stringify(balanceFixtures))
+        assert.equal(wallet.getBalance(), 52388527)
       })
 
       function fundAddressZero(wallet, amount) {

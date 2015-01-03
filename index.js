@@ -61,7 +61,7 @@ Wallet.prototype.getBalance = function(minConf) {
 
   var network = bitcoin.networks[this.networkName]
   var myAddresses = this.addresses.concat(this.changeAddresses)
-  var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses, minConf)
+  var utxos = getCandidateOutputs(this.txGraph.getAllNodes(), this.txMetadata, network, myAddresses, minConf)
 
   return utxos.reduce(function(balance, unspent) {
     return balance + unspent.value
@@ -143,7 +143,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
 
   var myAddresses = this.addresses.concat(this.changeAddresses)
   if(minConf == null) minConf = 1
-  var utxos = getCandidateOutputs(this.txGraph.heads, this.txMetadata, network, myAddresses, minConf)
+  var utxos = getCandidateOutputs(this.txGraph.getAllNodes(), this.txMetadata, network, myAddresses, minConf)
   utxos = utxos.sort(function(o1, o2){
     return o2.value - o1.value
   })
@@ -199,15 +199,16 @@ Wallet.prototype.sendTx = function(tx, done) {
   })
 }
 
-function getCandidateOutputs(headNodes, metadata, network, myAddresses, minConf) {
-  var unspentNodes = headNodes.filter(function(n) {
-    return metadata[n.id].confirmations >= minConf
+function getCandidateOutputs(allNodes, metadata, network, myAddresses, minConf) {
+  var confirmedNodes = allNodes.filter(function(n) {
+    var meta = metadata[n.id]
+    return meta && meta.confirmations >= minConf
   })
 
-  return unspentNodes.reduce(function(unspentOutputs, node) {
+  return confirmedNodes.reduce(function(unspentOutputs, node) {
     node.tx.outs.forEach(function(out, i) {
       var address = bitcoin.Address.fromOutputScript(out.script, network).toString()
-      if(myAddresses.indexOf(address) >= 0) {
+      if(myAddresses.indexOf(address) >= 0 && node.nextNodes[i] == null) {
         unspentOutputs.push({
           id: node.id,
           address: address,

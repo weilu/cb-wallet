@@ -1,4 +1,5 @@
 var assert = require('assert')
+var API = require('cb-blockr')
 var sinon = require('sinon')
 var TxGraph = require('bitcoin-tx-graph')
 var bitcoin = require('bitcoinjs-lib')
@@ -56,6 +57,23 @@ describe('Common Blockchain Wallet', function() {
 
         it('assigns networkName', function() {
           assert.equal(wallet.networkName, 'testnet')
+        })
+
+        it('assigns api', function() {
+          assert(wallet.api instanceof API)
+          assert.equal(wallet.api.getProxyURL(), undefined)
+        })
+
+        it('api uses a proxy url passed in as an environment variable', function(done) {
+          var url = 'https://hive-proxy.herokuapp.com/?url='
+          process.env.PROXY_URL = url
+          var wallet = new Wallet(fixtures.externalAccount, fixtures.internalAccount, 'testnet', function(err, w) {
+            process.env.PROXY_URL = undefined
+            assert.ifError(err)
+
+            assert.equal(wallet.api.getProxyURL(), url)
+            done()
+          })
         })
 
         it('assigns txMetadata', function() {

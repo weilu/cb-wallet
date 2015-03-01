@@ -31,7 +31,7 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
   }
 
   this.networkName = networkName
-  this.api = new API(networkName)
+  this.api = new API(networkName, process.env.PROXY_URL)
   this.txGraph = new TxGraph()
 
   var that = this

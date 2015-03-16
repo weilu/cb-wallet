@@ -8,7 +8,8 @@
     "bip32-utils": "0.0.1",
     "bitcoin-tx-graph": "^4.0.3",
     "bitcoinjs-lib": "^1.2.0",
-    "cb-blockr": "^3.1.1"
+    "cb-blockr": "^3.1.1",
+    "envify": "^3.3.1"
   },
   "devDependencies": {
     "mocha": "^1.21.4",
@@ -26,6 +27,9 @@
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/weilu/cb-wallet/issues"
+  },
+  "browserify": {
+    "transform": [ "envify" ]
   },
   "homepage": "https://github.com/weilu/cb-wallet"
 }

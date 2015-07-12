@@ -13,12 +13,14 @@ function discoverAddressesForAccounts(api, externalAccount, internalAccount, cal
   async.parallel(functions, function(err, results) {
     if(err) return callback(err);
 
-    callback(null, results[0], results[1])
+    callback(null, results[0].addresses, results[1].addresses,
+             results[0].balance + results[1].balance)
   })
 }
 
 function discoverUsedAddresses(iterator, api, done) {
   var usedAddresses = []
+  var balance = 0
 
   bip32utils.discovery(iterator, 5, function(addresses, callback) {
 
@@ -26,6 +28,10 @@ function discoverUsedAddresses(iterator, api, done) {
 
     api.addresses.summary(addresses, function(err, results) {
       if (err) return callback(err);
+
+      balance = results.reduce(function(total, address) {
+        return total += address.balance
+      }, 0)
 
       callback(undefined, results.map(function(result) {
         return result.txCount > 0
@@ -36,7 +42,7 @@ function discoverUsedAddresses(iterator, api, done) {
 
     console.info('Discovered ' + k + ' addresses')
 
-    done(null, usedAddresses.slice(0, k))
+    done(null, { addresses: usedAddresses.slice(0, k), balance: balance })
   })
 }
 

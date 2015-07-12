@@ -140,8 +140,8 @@ describe('Common Blockchain Wallet', function() {
       })
 
       it('does not miss pending unspents', function() {
-        wallet = Wallet.deserialize(JSON.stringify(balanceFixtures))
-        assert.equal(wallet.getBalance(), 52388527)
+        var myWallet = Wallet.deserialize(JSON.stringify(balanceFixtures))
+        assert.equal(myWallet.getBalance(), 52388527)
       })
 
       function fundAddressZero(wallet, amount) {

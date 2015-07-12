@@ -1,12 +1,13 @@
 "use strict";
 
 var bitcoin = require('bitcoinjs-lib')
-var discover = require('bip32-utils').discovery
+var bip32utils = require('bip32-utils')
 var async = require('async')
 
 function discoverAddressesForAccounts(api, externalAccount, internalAccount, callback) {
   var functions = [externalAccount, internalAccount].map(function(account) {
-    return function(cb) { discoverUsedAddresses(account, api, cb) }
+    var iterator = new bip32utils.AddressIterator(account)
+    return function(cb) { discoverUsedAddresses(iterator, api, cb) }
   })
 
   async.parallel(functions, function(err, results) {
@@ -16,10 +17,10 @@ function discoverAddressesForAccounts(api, externalAccount, internalAccount, cal
   })
 }
 
-function discoverUsedAddresses(account, api, done) {
+function discoverUsedAddresses(iterator, api, done) {
   var usedAddresses = []
 
-  discover(account, 5, function(addresses, callback) {
+  bip32utils.discovery(iterator, 5, function(addresses, callback) {
 
     usedAddresses = usedAddresses.concat(addresses)
 

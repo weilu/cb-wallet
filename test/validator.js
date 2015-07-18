@@ -89,7 +89,7 @@ describe('validator', function(){
       assert.throws(function() { validate.utxos('foobar') })
     });
 
-    ['id', 'address', 'value', 'index'].forEach(function(field){
+    ['id', 'address', 'value', 'index', 'confirmations'].forEach(function(field){
       describe('when ' + field + ' is missing', function(){
         it('throws an error', function(){
           assert.throws(function() {

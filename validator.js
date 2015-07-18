@@ -42,6 +42,7 @@ function utxos(utxos) {
     assert(unspent.address != null && typeof unspent.address === 'string', 'Expect every utxo has an address field (string)')
     assert(unspent.value != null && typeof unspent.value === 'number', 'Expect every utxo has a value field (number)')
     assert(unspent.index != null && typeof unspent.index === 'number', 'Expect every utxo has an index field (number)')
+    assert(unspent.confirmations != null && typeof unspent.confirmations === 'number', 'Expect every utxo has a confirmations field (number)')
   })
 }
 

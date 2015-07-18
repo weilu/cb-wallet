@@ -38,11 +38,25 @@ describe('Common Blockchain Wallet', function() {
                    HDNode.fromBase58(fixtures.internalAccount),
                    'testnet',
                    function() {}, // the done callback
+                   function() {}, // the unspents done callback
                    function(err, balance) { // the balance done callback
-          assert(!isNaN(balance))
-          assert.equal(balance, 0)
-          done()
-        })
+                     assert(!isNaN(balance))
+                     assert.equal(balance, 0)
+                     done()
+                   })
+      })
+
+      it('allows a unspents done callback to be specified as the second last argument', function(done) {
+        new Wallet(HDNode.fromBase58(fixtures.externalAccount),
+                   HDNode.fromBase58(fixtures.internalAccount),
+                   'testnet',
+                   function() {}, // the done callback
+                   function(err, utxos) {
+                     assert(Array.isArray(utxos))
+                     assert.deepEqual(utxos, [])
+                     done()
+                   },
+                   function() {}) // the balance done callback
       })
 
       it('accepts externalAccount and internalAccount as objects', function() {

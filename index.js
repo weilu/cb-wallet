@@ -6,10 +6,16 @@ var TxGraph = require('bitcoin-tx-graph')
 var assert = require('assert')
 var discoverAddresses = require('./network').discoverAddresses
 var fetchTransactions = require('./network').fetchTransactions
+var fetchUnspents = require('./network').fetchUnspents
 var validate = require('./validator')
 
-function Wallet(externalAccount, internalAccount, networkName, done, balanceDone) {
+function Wallet(externalAccount, internalAccount, networkName, done, unspentsDone, balanceDone) {
   if(arguments.length === 0) return this;
+  if(unspentsDone == null) {
+    unspentsDone = function() {
+      //no-op
+    }
+  }
   if(balanceDone == null) {
     balanceDone = function() {
       //no-op
@@ -41,7 +47,8 @@ function Wallet(externalAccount, internalAccount, networkName, done, balanceDone
 
   var that = this
 
-  discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, addresses, changeAddresses, balance) {
+  discoverAddresses(this.api, this.externalAccount, this.internalAccount,
+                    function(err, addresses, changeAddresses, balance, unspentAddresses) {
     if(err) {
       return doneError(err)
     }
@@ -50,6 +57,8 @@ function Wallet(externalAccount, internalAccount, networkName, done, balanceDone
 
     that.addresses = addresses
     that.changeAddresses = changeAddresses
+
+    fetchUnspents(that.api, unspentAddresses, unspentsDone)
 
     var addresses = addresses.concat(changeAddresses)
     fetchTransactions(that.api, addresses, function(err, txs, metadata) {
@@ -66,6 +75,7 @@ function Wallet(externalAccount, internalAccount, networkName, done, balanceDone
 
   function doneError(err) {
     done(err)
+    unspentsDone(err)
     balanceDone(err)
   }
 }

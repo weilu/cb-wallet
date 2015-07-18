@@ -8,6 +8,7 @@ var TransactionBuilder = bitcoin.TransactionBuilder
 var HDNode = bitcoin.HDNode
 var Address = bitcoin.Address
 var testnet = bitcoin.networks.testnet
+var bufferutils = bitcoin.bufferutils
 var fixtures = require('./wallet')
 var balanceFixtures = require('./balance')
 var history = require('./history')
@@ -350,167 +351,247 @@ describe('Common Blockchain Wallet', function() {
     })
 
     describe('createTx', function() {
-      var to, value, unspentTxs
-      var address1, address2
+      var to, value
 
       before(function(){
         to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
         value = 500000
-        unspentTxs = []
-
-        address1 = readOnlyWallet.addresses[0]
-        address2 = readOnlyWallet.changeAddresses[0]
-
-        var pair0 = createTxPair(address1, 400000) // not enough for value
-        unspentTxs.push(pair0.tx)
-
-        var pair1 = createTxPair(address1, 500000) // not enough for only value
-        unspentTxs.push(pair1.tx)
-
-        var pair2 = createTxPair(address2, 510000) // enough for value and fee
-        unspentTxs.push(pair2.tx)
-
-        var pair3 = createTxPair(address2, 520000) // enough for value and fee
-        unspentTxs.push(pair3.tx)
-
-        readOnlyWallet.processTx([
-          {tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx},
-          {tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx},
-          {tx: pair2.tx, confirmations: 1}, {tx: pair2.prevTx},
-          {tx: pair3.tx, confirmations: 0}, {tx: pair3.prevTx}
-        ])
-
-        function createTxPair(address, amount) {
-          var prevTx = new Transaction()
-          prevTx.addInput(new Transaction(), 0)
-          prevTx.addOutput(to, amount)
-
-          var tx = new Transaction()
-          tx.addInput(prevTx, 0)
-          tx.addOutput(address, amount)
-
-          return { prevTx: prevTx, tx: tx }
-        }
       })
 
-      describe('transaction outputs', function(){
-        it('includes the specified address and amount', function(){
-          var tx = readOnlyWallet.createTx(to, value)
+      describe('with utxos passed in', function() {
+        var utxos = [{
+          id: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
+          address: 'mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq',
+          value: 400000,
+          index: 0
+        }, {
+          id: '97bad8569bbd71f27b562b49cc65b5fa683e96c7912fac2f9d68e343a59d570e',
+          address: 'mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq',
+          value: 500000,
+          index: 0
+        }, {
+          id: '7e6be25012e2ee3450b1435d5115d68a9be1cb376e094877df12a1508f003937',
+          address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
+          value: 510000,
+          index: 0
+        }]
 
-          assert.equal(tx.outs.length, 1)
-          var out = tx.outs[0]
-          var outAddress = Address.fromOutputScript(out.script, testnet)
+        describe('transaction outputs', function(){
+          it('includes the specified address and amount', function(){
+            var tx = readOnlyWallet.createTx(to, value, null, utxos)
 
-          assert.equal(outAddress.toString(), to)
-          assert.equal(out.value, value)
+            assert.equal(tx.outs.length, 1)
+            var out = tx.outs[0]
+            var outAddress = Address.fromOutputScript(out.script, testnet)
+
+            assert.equal(outAddress.toString(), to)
+            assert.equal(out.value, value)
+          })
+
+          describe('change', function(){
+            it('uses the next change address', function(){
+              var fee = 0
+              var tx = readOnlyWallet.createTx(to, value, fee, utxos)
+
+              assert.equal(tx.outs.length, 2)
+              var out = tx.outs[1]
+              var outAddress = Address.fromOutputScript(out.script, testnet)
+
+              assert.equal(outAddress.toString(), readOnlyWallet.getNextChangeAddress())
+              assert.equal(out.value, 10000)
+            })
+
+            it('skips change if it is not above dust threshold', function(){
+              var fee = 9454
+              var tx = readOnlyWallet.createTx(to, value, fee, utxos)
+              assert.equal(tx.outs.length, 1)
+            })
+          })
         })
 
-        describe('change', function(){
-          it('uses the next change address', function(){
+        it('takes fees into account', function(){
+          var tx = readOnlyWallet.createTx(to, value, null, utxos)
+
+          assert.equal(tx.ins.length, 1)
+
+          hash = bufferutils.reverse(new Buffer(utxos[2].id, 'hex'))
+          assert.deepEqual(tx.ins[0].hash, hash)
+
+          assert.equal(tx.ins[0].index, 0)
+        })
+
+        describe('validations', function(){
+          it('errors on invalid address', function(){
+            assert.throws(function() { readOnlyWallet.createTx('123', value) })
+          })
+
+          it('errors on invalid utxos', function(){
+            assert.throws(function() { readOnlyWallet.createTx(to, value, null, {}) })
+          })
+        })
+      })
+
+      describe('without utxos passed in', function() {
+        var address1, address2, unspentTxs
+
+        before(function(){
+          unspentTxs = []
+
+          address1 = readOnlyWallet.addresses[0]
+          address2 = readOnlyWallet.changeAddresses[0]
+
+          var pair0 = createTxPair(address1, 400000) // not enough for value
+          unspentTxs.push(pair0.tx)
+
+          var pair1 = createTxPair(address1, 500000) // not enough for only value
+          unspentTxs.push(pair1.tx)
+
+          var pair2 = createTxPair(address2, 510000) // enough for value and fee
+          unspentTxs.push(pair2.tx)
+
+          var pair3 = createTxPair(address2, 520000) // enough for value and fee
+          unspentTxs.push(pair3.tx)
+
+          readOnlyWallet.processTx([
+            {tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx},
+            {tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx},
+            {tx: pair2.tx, confirmations: 1}, {tx: pair2.prevTx},
+            {tx: pair3.tx, confirmations: 0}, {tx: pair3.prevTx}
+          ])
+
+          function createTxPair(address, amount) {
+            var prevTx = new Transaction()
+            prevTx.addInput(new Transaction(), 0)
+            prevTx.addOutput(to, amount)
+
+            var tx = new Transaction()
+            tx.addInput(prevTx, 0)
+            tx.addOutput(address, amount)
+
+            return { prevTx: prevTx, tx: tx }
+          }
+        })
+
+        describe('transaction outputs', function(){
+          it('includes the specified address and amount', function(){
+            var tx = readOnlyWallet.createTx(to, value)
+
+            assert.equal(tx.outs.length, 1)
+            var out = tx.outs[0]
+            var outAddress = Address.fromOutputScript(out.script, testnet)
+
+            assert.equal(outAddress.toString(), to)
+            assert.equal(out.value, value)
+          })
+
+          describe('change', function(){
+            it('uses the next change address', function(){
+              var fee = 0
+              var tx = readOnlyWallet.createTx(to, value, fee)
+
+              assert.equal(tx.outs.length, 2)
+              var out = tx.outs[1]
+              var outAddress = Address.fromOutputScript(out.script, testnet)
+
+              assert.equal(outAddress.toString(), readOnlyWallet.getNextChangeAddress())
+              assert.equal(out.value, 10000)
+            })
+
+            it('skips change if it is not above dust threshold', function(){
+              var fee = 9454
+              var tx = readOnlyWallet.createTx(to, value, fee)
+              assert.equal(tx.outs.length, 1)
+            })
+          })
+        })
+
+        describe('choosing utxo', function(){
+          it('takes fees into account', function(){
+            var tx = readOnlyWallet.createTx(to, value)
+
+            assert.equal(tx.ins.length, 1)
+            assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash())
+            assert.equal(tx.ins[0].index, 0)
+          })
+
+          it('respects specified minConf', function(){
+            var tx = readOnlyWallet.createTx(to, value, null, 0)
+
+            assert.equal(tx.ins.length, 1)
+            assert.deepEqual(tx.ins[0].hash, unspentTxs[3].getHash())
+            assert.equal(tx.ins[0].index, 0)
+          })
+        })
+
+        describe('transaction fee', function(){
+          it('allows fee to be specified', function(){
+            var fee = 30000
+            var tx = readOnlyWallet.createTx(to, value, fee)
+
+            assert.equal(getFee(tx), fee)
+          })
+
+          it('allows fee to be set to zero', function(){
+            value = 510000
             var fee = 0
             var tx = readOnlyWallet.createTx(to, value, fee)
 
-            assert.equal(tx.outs.length, 2)
-            var out = tx.outs[1]
-            var outAddress = Address.fromOutputScript(out.script, testnet)
-
-            assert.equal(outAddress.toString(), readOnlyWallet.getNextChangeAddress())
-            assert.equal(out.value, 10000)
+            assert.equal(getFee(tx), fee)
           })
 
-          it('skips change if it is not above dust threshold', function(){
-            var fee = 14570
-            var tx = readOnlyWallet.createTx(to, value)
-            assert.equal(tx.outs.length, 1)
+          function getFee(tx) {
+            var inputValue = tx.ins.reduce(function(memo, input){
+              var id = Array.prototype.reverse.call(input.hash).toString('hex')
+              var prevTx = unspentTxs.filter(function(t) {
+                return t.getId() === id
+              })[0]
+              return memo + prevTx.outs[0].value
+            }, 0)
+
+            return tx.outs.reduce(function(memo, output){
+              return memo - output.value
+            }, inputValue)
+          }
+        })
+
+        describe('signing', function(){
+          afterEach(function(){
+            TransactionBuilder.prototype.sign.restore()
+            TransactionBuilder.prototype.build.restore()
+          })
+
+          it('signes the inputs with respective keys', function(){
+            var fee = 30000
+            sinon.stub(TransactionBuilder.prototype, "sign")
+            sinon.stub(TransactionBuilder.prototype, "build")
+
+            var tx = readOnlyWallet.createTx(to, value, fee)
+
+            assert(TransactionBuilder.prototype.sign.calledWith(0, readOnlyWallet.getPrivateKeyForAddress(address2)))
+            assert(TransactionBuilder.prototype.sign.calledWith(1, readOnlyWallet.getPrivateKeyForAddress(address1)))
+            assert(TransactionBuilder.prototype.build.calledWith())
+          })
+        })
+
+        describe('validations', function(){
+          it('errors on invalid address', function(){
+            assert.throws(function() { readOnlyWallet.createTx('123', value) })
+          })
+
+          it('errors on address with the wrong version', function(){
+            assert.throws(function() { readOnlyWallet.createTx('LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B', value) })
+          })
+
+          it('errors on below dust value', function(){
+            assert.throws(function() { readOnlyWallet.createTx(to, 546) })
+          })
+
+          it('errors on insufficient funds', function(){
+            assert.throws(function() { readOnlyWallet.createTx(to, 1400001) })
           })
         })
       })
 
-      describe('choosing utxo', function(){
-        it('takes fees into account', function(){
-          var tx = readOnlyWallet.createTx(to, value)
-
-          assert.equal(tx.ins.length, 1)
-          assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash())
-          assert.equal(tx.ins[0].index, 0)
-        })
-
-        it('respects specified minConf', function(){
-          var tx = readOnlyWallet.createTx(to, value, null, 0)
-
-          assert.equal(tx.ins.length, 1)
-          assert.deepEqual(tx.ins[0].hash, unspentTxs[3].getHash())
-          assert.equal(tx.ins[0].index, 0)
-        })
-      })
-
-      describe('transaction fee', function(){
-        it('allows fee to be specified', function(){
-          var fee = 30000
-          var tx = readOnlyWallet.createTx(to, value, fee)
-
-          assert.equal(getFee(tx), fee)
-        })
-
-        it('allows fee to be set to zero', function(){
-          value = 510000
-          var fee = 0
-          var tx = readOnlyWallet.createTx(to, value, fee)
-
-          assert.equal(getFee(tx), fee)
-        })
-
-        function getFee(tx) {
-          var inputValue = tx.ins.reduce(function(memo, input){
-            var id = Array.prototype.reverse.call(input.hash).toString('hex')
-            var prevTx = unspentTxs.filter(function(t) {
-              return t.getId() === id
-            })[0]
-            return memo + prevTx.outs[0].value
-          }, 0)
-
-          return tx.outs.reduce(function(memo, output){
-            return memo - output.value
-          }, inputValue)
-        }
-      })
-
-      describe('signing', function(){
-        afterEach(function(){
-          TransactionBuilder.prototype.sign.restore()
-          TransactionBuilder.prototype.build.restore()
-        })
-
-        it('signes the inputs with respective keys', function(){
-          var fee = 30000
-          sinon.stub(TransactionBuilder.prototype, "sign")
-          sinon.stub(TransactionBuilder.prototype, "build")
-
-          var tx = readOnlyWallet.createTx(to, value, fee)
-
-          assert(TransactionBuilder.prototype.sign.calledWith(0, readOnlyWallet.getPrivateKeyForAddress(address2)))
-          assert(TransactionBuilder.prototype.sign.calledWith(1, readOnlyWallet.getPrivateKeyForAddress(address1)))
-          assert(TransactionBuilder.prototype.build.calledWith())
-        })
-      })
-
-      describe('validations', function(){
-        it('errors on invalid address', function(){
-          assert.throws(function() { readOnlyWallet.createTx('123', value) })
-        })
-
-        it('errors on address with the wrong version', function(){
-          assert.throws(function() { readOnlyWallet.createTx('LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B', value) })
-        })
-
-        it('errors on below dust value', function(){
-          assert.throws(function() { readOnlyWallet.createTx(to, 546) })
-        })
-
-        it('errors on insufficient funds', function(){
-          assert.throws(function() { readOnlyWallet.createTx(to, 1400001) })
-        })
-      })
     })
 
     describe('sendTx', function() {

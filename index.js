@@ -151,13 +151,27 @@ Wallet.prototype.processTx = function(txs) {
   }
 }
 
-Wallet.prototype.createTx = function(to, value, fee, minConf) {
+Wallet.prototype.createTx = function(to, value, fee, minConfOrUtxos) {
   var network = bitcoin.networks[this.networkName]
   validate.preCreateTx(to, value, network)
 
-  var myAddresses = this.addresses.concat(this.changeAddresses)
-  if(minConf == null) minConf = 1
-  var utxos = getCandidateOutputs(this.txGraph.getAllNodes(), this.txMetadata, network, myAddresses, minConf)
+  var minConf = null
+  var utxos = null
+
+  if(minConfOrUtxos == null) {
+    minConf = 1
+  } else if(typeof minConfOrUtxos === 'number') {
+    minConf = minConfOrUtxos
+  } else if(typeof minConfOrUtxos === 'object') {
+    validate.utxos(minConfOrUtxos)
+    utxos = minConfOrUtxos.slice()
+  }
+
+  if(minConf != null) {
+    var myAddresses = this.addresses.concat(this.changeAddresses)
+    utxos = getCandidateOutputs(this.txGraph.getAllNodes(), this.txMetadata, network, myAddresses, minConf)
+  }
+
   utxos = utxos.sort(function(o1, o2){
     return o2.value - o1.value
   })

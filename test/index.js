@@ -374,27 +374,28 @@ describe('Common Blockchain Wallet', function() {
 
       describe('with utxos passed in', function() {
         var utxos = [{
-          id: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
+          txId: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
           address: 'mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq',
-          value: 400000,
-          index: 0,
+          amount: 400000,
+          vout: 0,
           confirmations: 3
         }, {
-          id: '97bad8569bbd71f27b562b49cc65b5fa683e96c7912fac2f9d68e343a59d570e',
+          txId: '97bad8569bbd71f27b562b49cc65b5fa683e96c7912fac2f9d68e343a59d570e',
           address: 'mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq',
-          value: 500000,
-          index: 0,
+          amount: 500000,
+          vout: 0,
           confirmations: 2
         }, {
-          id: '7e6be25012e2ee3450b1435d5115d68a9be1cb376e094877df12a1508f003937',
+          txId: '7e6be25012e2ee3450b1435d5115d68a9be1cb376e094877df12a1508f003937',
           address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
-          value: 510000,
-          index: 0,
+          amount: 510000,
+          vout: 0,
           confirmations: 1
-        }, { id: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
+        }, {
+          txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
           address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
-          value: 520000,
-          index: 0,
+          amount: 520000,
+          vout: 0,
           confirmations: 0
         }]
 
@@ -436,7 +437,7 @@ describe('Common Blockchain Wallet', function() {
             var tx = readOnlyWallet.createTx(to, value, null, null, utxos)
 
             assert.equal(tx.ins.length, 1)
-            hash = bufferutils.reverse(new Buffer(utxos[2].id, 'hex'))
+            hash = bufferutils.reverse(new Buffer(utxos[2].txId, 'hex'))
             assert.deepEqual(tx.ins[0].hash, hash)
             assert.equal(tx.ins[0].index, 0)
           })
@@ -445,7 +446,7 @@ describe('Common Blockchain Wallet', function() {
             var tx = readOnlyWallet.createTx(to, value, null, 0, utxos)
 
             assert.equal(tx.ins.length, 1)
-            hash = bufferutils.reverse(new Buffer(utxos[3].id, 'hex'))
+            hash = bufferutils.reverse(new Buffer(utxos[3].txId, 'hex'))
             assert.deepEqual(tx.ins[0].hash, hash)
             assert.equal(tx.ins[0].index, 0)
           })

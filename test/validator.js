@@ -89,7 +89,7 @@ describe('validator', function(){
       assert.throws(function() { validate.utxos('foobar') })
     });
 
-    ['id', 'address', 'value', 'index', 'confirmations'].forEach(function(field){
+    ['txId', 'address', 'amount', 'vout', 'confirmations'].forEach(function(field){
       describe('when ' + field + ' is missing', function(){
         it('throws an error', function(){
           assert.throws(function() {
@@ -108,10 +108,10 @@ describe('validator', function(){
 
     function getUtxo() {
       return {
-        id: '121954538a10eb7a59e319745b97302c2cf6ce1e159fe0de17f6038963a68fac',
+        txId: '121954538a10eb7a59e319745b97302c2cf6ce1e159fe0de17f6038963a68fac',
         address: '1Ao9jfhQgsfHT97qsQ3GDnQ9czJnFaXNyw',
-        value: 378340414,
-        index: 0
+        amount: 378340414,
+        vout: 0
       }
     }
   })

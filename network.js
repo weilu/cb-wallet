@@ -75,17 +75,12 @@ function fetchUnspents(api, addresses, done) {
   api.addresses.unspents(addresses, function(err, unspents) {
     if(err) return done(err);
 
-    done(null, unspents.map(function(unspent){
-      //TODO: rename fields to be the same as cb interface
-      return {
-        address: unspent.address,
-        confirmations: unspent.confirmations,
-        index: unspent.vout,
-        id: unspent.txId,
-        value: parseInt(new Big(unspent.amount).times(100000000), 10)
-        // TODO: get rid of ^this^ once cb-blocr is updated to return satoshi
-      }
-    }))
+    unspents.forEach(function(unspent){
+      unspent.amount = parseInt(new Big(unspent.amount).times(100000000), 10)
+      // TODO: get rid of ^this^ once cb-blocr is updated to return satoshi
+    })
+
+    done(null, unspents)
   })
 }
 

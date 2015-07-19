@@ -88,7 +88,7 @@ Wallet.prototype.getBalance = function(minConf) {
   var utxos = getCandidateOutputs(this.txGraph.getAllNodes(), this.txMetadata, network, myAddresses, minConf)
 
   return utxos.reduce(function(balance, unspent) {
-    return balance + unspent.amount
+    return balance + unspent.value
   }, 0)
 }
 
@@ -181,7 +181,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf, unspents) {
   }
 
   utxos = utxos.sort(function(o1, o2){
-    return o2.amount - o1.amount
+    return o2.value - o1.value
   })
 
   var accum = 0
@@ -203,7 +203,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf, unspents) {
       estimatedFee = fee
     }
 
-    accum += unspent.amount
+    accum += unspent.value
     subTotal = value + estimatedFee
     if (accum >= subTotal) {
       var change = accum - subTotal
@@ -248,7 +248,7 @@ function getCandidateOutputs(allNodes, metadata, network, myAddresses, minConf) 
         unspentOutputs.push({
           txId: node.id,
           address: address,
-          amount: out.value,
+          value: out.value,
           vout: i
         })
       }

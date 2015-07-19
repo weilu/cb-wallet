@@ -15,7 +15,7 @@ function discoverAddressesForAccounts(api, externalAccount, internalAccount, cal
     if(err) return callback(err);
 
     callback(null, results[0].addresses, results[1].addresses,
-             results[0].balance + results[1].balance,
+             btcToSatoshi(results[0].balance + results[1].balance),
              results[0].unspentAddresses.concat(results[1].unspentAddresses))
   })
 }
@@ -32,9 +32,9 @@ function discoverUsedAddresses(iterator, api, done) {
     api.addresses.summary(addresses, function(err, results) {
       if (err) return callback(err);
 
-      balance = results.reduce(function(total, address) {
+      balance += results.reduce(function(total, address) {
         if(address.balance > 0) {
-          unspentAddresses.push(address)
+          unspentAddresses.push(address.address)
         }
         return total += address.balance
       }, 0)
@@ -71,13 +71,17 @@ function fetchTransactions(api, addresses, done) {
   })
 }
 
+// TODO: get rid of this once cb-blocr is updated to return satoshi
+function btcToSatoshi(btc) {
+  return parseInt(new Big(btc).times(100000000), 10)
+}
+
 function fetchUnspents(api, addresses, done) {
   api.addresses.unspents(addresses, function(err, unspents) {
     if(err) return done(err);
 
     unspents.forEach(function(unspent){
-      unspent.amount = parseInt(new Big(unspent.amount).times(100000000), 10)
-      // TODO: get rid of ^this^ once cb-blocr is updated to return satoshi
+      unspent.value = btcToSatoshi(unspent.value)
     })
 
     done(null, unspents)
@@ -120,3 +124,4 @@ module.exports = {
   fetchTransactions: fetchTransactions,
   fetchUnspents: fetchUnspents
 }
+

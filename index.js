@@ -53,11 +53,10 @@ function Wallet(externalAccount, internalAccount, networkName, done, unspentsDon
       return doneError(err)
     }
 
-    balanceDone(null, balance)
-
     that.addresses = addresses
     that.changeAddresses = changeAddresses
 
+    balanceDone(null, balance)
     fetchUnspents(that.api, unspentAddresses, unspentsDone)
 
     var addresses = addresses.concat(changeAddresses)

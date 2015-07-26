@@ -37,7 +37,7 @@ describe('Common Blockchain Wallet', function() {
       })
 
       it('allows a balance done callback to be specified as the last argument', function(done) {
-        new Wallet(HDNode.fromBase58(externalAccount),
+        var myWallet = new Wallet(HDNode.fromBase58(externalAccount),
                    HDNode.fromBase58(internalAccount),
                    'testnet',
                    function() {}, // the done callback
@@ -47,6 +47,12 @@ describe('Common Blockchain Wallet', function() {
                      assert(!isNaN(balance))
                      assert(balance > 0)
                      assert.equal(balance, parseInt(balance, 10)) // in satoshi
+
+                     assert(Array.isArray(myWallet.addresses))
+                     assert(myWallet.addresses.length > 0)
+                     assert(Array.isArray(myWallet.changeAddresses))
+                     assert(myWallet.changeAddresses.length > 0)
+
                      done()
                    })
       })

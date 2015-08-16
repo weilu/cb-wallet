@@ -10,6 +10,7 @@ var Address = bitcoin.Address
 var testnet = bitcoin.networks.testnet
 var bufferutils = bitcoin.bufferutils
 var fixtures = require('./wallet')
+var ltcfixtures = require('./ltcwallet')
 var addressFixtures = require('./addresses')
 var balanceFixtures = require('./balance')
 var history = require('./history')
@@ -378,6 +379,33 @@ describe('Common Blockchain Wallet', function() {
         })
 
         assert.deepEqual(actual, expected)
+      })
+    })
+
+    describe('_createUnsignedTx', function() {
+      before(function() {
+        ltcWallet = Wallet.deserialize(JSON.stringify(ltcfixtures))
+      })
+
+      describe('with utxos passed in', function() {
+        var utxos = [{
+          txId: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
+          address: 'LcanZBrWAyzNknVkAbSKoTak1UgJpaEtHB',
+          value: 500000,
+          vout: 0,
+          confirmations: 3
+        }]
+
+        describe('dust change', function(){
+          it('includes the penalty fee for dust', function(){
+            var to = 'LRukAoMrjDeQeyAkR6cTCvTkxYwVKWAffZ'
+            var value = 150000
+            var builder = ltcWallet._createUnsignedTx(to, value, null, null, utxos, [])
+            var tx = builder.buildIncomplete()
+            var fee = utxos[0].value - tx.outs[0].value - tx.outs[1].value
+            assert.equal(fee, 200000)
+          })
+        })
       })
     })
 

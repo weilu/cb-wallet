@@ -161,6 +161,17 @@ Wallet.prototype.processTx = function(txs) {
 }
 
 Wallet.prototype.createTx = function(to, value, fee, minConf, unspents) {
+  var addresses = []
+  var builder = this._createUnsignedTx(to, value, fee, minConf, unspents, addresses)
+
+  addresses.forEach(function(address, i) {
+    builder.sign(i, this.getPrivateKeyForAddress(address))
+  }, this)
+
+  return builder.build()
+}
+
+Wallet.prototype._createUnsignedTx = function(to, value, fee, minConf, unspents, addresses) {
   var network = bitcoin.networks[this.networkName]
   validate.preCreateTx(to, value, network)
 
@@ -185,7 +196,6 @@ Wallet.prototype.createTx = function(to, value, fee, minConf, unspents) {
 
   var accum = 0
   var subTotal = value
-  var addresses = []
 
   var builder = new bitcoin.TransactionBuilder()
   builder.addOutput(to, value)
@@ -217,11 +227,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf, unspents) {
 
   validate.postCreateTx(subTotal, accum, this.getBalance(0))
 
-  addresses.forEach(function(address, i) {
-    builder.sign(i, that.getPrivateKeyForAddress(address))
-  })
-
-  return builder.build()
+  return builder
 }
 
 Wallet.prototype.sendTx = function(tx, done) {
@@ -260,7 +266,8 @@ function getCandidateOutputs(allNodes, metadata, network, myAddresses, minConf) 
 function estimateFeePadChangeOutput(tx, network) {
   var tmpTx = tx.clone()
   var tmpAddress = bitcoin.Address.fromOutputScript(tx.outs[0].script, network)
-  tmpTx.addOutput(tmpAddress, network.dustSoftThreshold || 0)
+  var dummyAmount = network.dustSoftThreshold == null ? 0 : (network.dustSoftThreshold - 1)
+  tmpTx.addOutput(tmpAddress, dummyAmount)
 
   return network.estimateFee(tmpTx)
 }

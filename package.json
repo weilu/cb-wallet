@@ -9,7 +9,7 @@
     "bip32-utils": "^0.4.2",
     "bitcoin-tx-graph": "^4.0.4",
     "bitcoinjs-lib": "^1.5.7",
-    "cb-blockr": "^3.1.1",
+    "cb-blockr": "^3.1.2",
     "envify": "^3.3.1"
   },
   "devDependencies": {
